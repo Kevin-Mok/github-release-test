@@ -1,3 +1,4 @@
+import org.jenkinsci.plugins.workflow.libs.Library
 @Library('jenkins-pipeline-shared-libraries-kmok')_
 
 deployProperties = [:]
@@ -8,20 +9,23 @@ pipeline {
     }
     environment {
         PROPERTIES_FILE_NAME = "deployment.properties"
-        BOT_CREDS = "kmok-github-bot"
+        /* BOT_CREDENTIALS_ID = "bsig-gh-bot" */
+        BOT_CREDENTIALS_ID = "kmok-github-bot"
     }
     parameters {
         string(name: 'DISPLAY_NAME', defaultValue: '', description: 'Setup a specific build display name')
-        string(name: 'DEPLOY_BUILD_URL', defaultValue: '', description: 'URL to jenkins deploy build to retrieve the `deployment.properties` file. If base parameters are defined, they will override the `deployment.properties` information')
-        string(name: 'BUILD_BRANCH_NAME', defaultValue: 'master', description: 'Override `deployment.properties`. Which branch to build? Set if you are not on a multibranch pipeline.')
-        booleanParam(name: 'RELEASE', defaultValue: false, description: 'Override `deployment.properties`. Is this build for a release?')
-        string(name: 'PROJECT_VERSION', defaultValue: '', description: 'Override `deployment.properties`. Optional if not RELEASE. If RELEASE, cannot be empty.')
-        string(name: 'GIT_TAG', defaultValue: '', description: 'Git tag to set, if different from PROJECT_VERSION')
+        string(name: 'DEPLOY_BUILD_URL', defaultValue: 'https://rhba-jenkins.rhev-ci-vms.eng.rdu2.redhat.com/job/custom/job/kmok/job/KOGITO-2375-props/lastSuccessfulBuild/', description: 'URL to jenkins deploy build to retrieve the `deployment.properties` file. If base parameters are defined, they will override the `deployment.properties` information')
+        string(name: 'GIT_AUTHOR', defaultValue: 'Kevin-Mok', description: 'Which Git author repository ?')
+        string(name: 'BUILD_BRANCH_NAME', defaultValue: '7.13.0', description: 'Override `deployment.properties`. Which branch to build? Set if you are not on a multibranch pipeline.')
+        booleanParam(name: 'RELEASE', defaultValue: true, description: 'Override `deployment.properties`. Is this build for a release?')
+        string(name: 'PROJECT_VERSION', defaultValue: '7.13.0', description: 'Override `deployment.properties`. Optional if not RELEASE. If RELEASE, cannot be empty.')
+        string(name: 'GIT_TAG', defaultValue: '7.13.01', description: 'Git tag to set, if different from PROJECT_VERSION')
     }
     stages {
         stage('Initialization') {
             steps {
                 script {
+                    cleanWs()
                     if (params.DISPLAY_NAME != "") {
                         currentBuild.displayName = params.DISPLAY_NAME
                     }
@@ -31,70 +35,42 @@ pipeline {
                     if (isRelease()) {
                         assert getProjectVersion() != ''
                     }
-                    if (getGitTag() != ""){
-                        assert getBuildBranch() != ''
-                    }
                 }
             }
         }
-        stage('Merge PR') {
+        stage('Merge runtimes deploy PR and tag') {
             when {
                 expression {
-                    return isRelease() && 
-                           getDeployProperty('kogito-runtimes.pr.link') != '' && 
-                           getDeployProperty('kogito-apps.pr.link') != '' && 
-                           getDeployProperty('kogito-examples.pr.link') != ''
+                    return isRelease() &&
+                           getDeployProperty('jenkins-test.pr.link') != '' &&
+                           getGitTag() != ''
                 }
             }
-            steps {
+            steps{
                 dir("kogito-runtimes") {
-                    cloneAndMerge("kogito-runtimes")
+                    checkoutRepo("jenkins-test")
+                    mergeAndPush("jenkins-test")
+                    tagLatest()
                 }
-                /* dir("kogito-apps") {
-                    cloneAndMerge("kogito-apps")
-                }
-                dir("kogito-examples") {
-                    cloneAndMerge("kogito-examples")
-                } */
             }
         }
-        stage('Git tag') {
+        stage('Create/merge runtimes snapshot PR'){
             when {
-                expression { return getGitTag() != "" }
+                expression { return isRelease() && getProjectVersion() != "" }
             }
             steps {
-                dir("kogito-runtimes") {
-                    tagLatest("kogito-runtimes")
+                dir("kogito-runtimes-bot") {
+                    prepareForPR("jenkins-test")
+                    sh "echo \$(date) >> README.md"
+                    commitAndCreatePR("jenkins-test")
                 }
-                /* dir("kogito-apps") {
-                    tagLatest("kogito-apps")
-                }
-                dir("kogito-examples") {
-                    tagLatest("kogito-examples")
-                } */
-            }
-        }
-        stage('Set next snapshot') {
-            when {
-                expression { return getProjectVersion() != "" }
-            }
-            steps {
                 dir("kogito-runtimes") {
                     script {
-                        /* maven.mvnVersionsSet(getSnapshotVersion())
-                        sh "mvn -B clean install -DskipTests"
-                        sh "git diff --stat" */
-                        echo "set snapshot"
+                        if (getDeployProperty('jenkins-test.pr.link') != ''){
+                            mergeAndPush("jenkins-test")
+                        }
                     }
                 }
-                /* dir("kogito-apps") {
-                    maven.mvnVersionsUpdateParentAndChildModules(getSnapshotVersion())
-                    sh "git diff --stat"
-                }
-                dir("kogito-examples") {
-                    maven.mvnVersionsSet(getSnapshotVersion())
-                    sh "git diff --stat"
-                } */
             }
         }
     }
@@ -106,7 +82,7 @@ pipeline {
 
 void readDeployProperties(){
     if (params.DEPLOY_BUILD_URL != ''){
-        sh "wget ${params.DEPLOY_BUILD_URL}artifact/${PROPERTIES_FILE_NAME}"
+        sh "wget ${params.DEPLOY_BUILD_URL}artifact/${PROPERTIES_FILE_NAME} -O ${PROPERTIES_FILE_NAME}"
         deployProperties = readProperties file: PROPERTIES_FILE_NAME
         // echo all properties
         echo deployProperties.collect{ entry -> "${entry.key}=${entry.value}" }.join("\n")
@@ -155,17 +131,59 @@ String getBuildBranch() {
     return getParamOrDeployProperty("BUILD_BRANCH_NAME", "git.branch")
 }
 
+String getGitAuthor() {
+    return getParamOrDeployProperty("GIT_AUTHOR", "git.author")
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // Git
 //////////////////////////////////////////////////////////////////////////////
-void cloneAndMerge(String repo) {
-    checkout(githubscm.resolveRepository(repo, "Kevin-Mok-Bot", getBuildBranch(), false))
-    githubscm.mergePR(getDeployProperty("${repo}.pr.link"), BOT_CREDS)
-    sh "git branch"
-    /* githubscm.pushObject("origin", getBuildBranch(), BOT_CREDS) */
+
+void checkoutRepo(String repo) {
+    checkout(githubscm.resolveRepository(repo, getGitAuthor(), getBuildBranch(), false))
+    sh "git checkout ${getBuildBranch()}"
 }
 
-void tagLatest(String repo) {
-    githubscm.tagRepository(getGitTag(), BUILD_TAG)
-    /* githubscm.pushObject("origin", getGitTag(), BOT_CREDS) */
+void mergeAndPush(String repo) {
+    githubscm.mergePR(getDeployProperty("${repo}.pr.link"), "kmok-github")
+    githubscm.pushObject("origin", getBuildBranch(), "kmok-github")
 }
+
+void tagLatest() {
+    githubscm.tagRepository(getGitTag(), env.BUILD_TAG)
+    githubscm.pushObject("origin", "--tags ${getGitTag()}", "kmok-github")
+}
+
+void prepareForPR(String repo) {
+    checkout(githubscm.resolveRepository(repo, getGitAuthor(), getBuildBranch(), false))
+    githubscm.forkRepo(env.BOT_CREDENTIALS_ID)
+    githubscm.createBranch(getSnapshotVersion())
+}
+
+void addNotIgnoredPoms() {
+    // based on https://stackoverflow.com/a/59888964/8811872
+    sh '''
+    find . -type f -name 'pom.xml' > found_poms.txt
+    poms_to_add=""
+    while IFS= read -r pom; do
+        if ! git check-ignore -q "\$pom"; then
+            poms_to_add="\$poms_to_add \$pom"
+        fi
+    done < found_poms.txt
+    rm found_poms.txt
+    git add \$poms_to_add
+    '''
+}
+
+void commitAndCreatePR(String repo) {
+    def commitMsg = "Update snapshot version to ${getSnapshotVersion()}"
+    def prBody = "Generated by build ${BUILD_TAG}: ${BUILD_URL}"
+    // Not using githubscm.commitChanges() because globbing won't work.
+    // See: https://github.com/kiegroup/kogito-runtimes/pull/570#discussion_r449268738
+    /* addNotIgnoredPoms() */
+    sh "git add README.md"
+    sh "git commit -m '${commitMsg}'"
+    githubscm.pushObject("origin", getSnapshotVersion(), env.BOT_CREDENTIALS_ID)
+    deployProperties["${repo}.pr.link"] = githubscm.createPR(commitMsg, prBody, getBuildBranch(), env.BOT_CREDENTIALS_ID)
+}
+
