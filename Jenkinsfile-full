@@ -248,8 +248,6 @@ void commitAndCreatePR(String repo) {
 
     // Not using githubscm.commitChanges() because globbing won't work.
     // See: https://github.com/kiegroup/kogito-runtimes/pull/570#discussion_r449268738
-    sh "git config user.name '${env.GIT_COMMITTER_NAME}'"
-    sh "git config user.email '${env.GIT_COMMITTER_EMAIL}'"
     addNotIgnoredPoms()
     sh "git commit -m '${commitMsg}'"
     githubscm.pushObject("origin", getProjectVersion(), env.BOT_CREDENTIALS_ID)

@@ -1,18 +1,20 @@
-@Library('jenkins-pipeline-shared-libraries')_
+import org.jenkinsci.plugins.workflow.libs.Library
+@Library('jenkins-pipeline-shared-libraries-kmok')_
 
 deployProperties = [:]
-BOT_CREDENTIALS_ID = "kmok-github-bot"
 
 pipeline {
     agent { label 'kie-rhel7-priority' }
     parameters {
-        string(name: 'DISPLAY_NAME', defaultValue: '', description: 'Setup a specific build display name')
-        string(name: 'BUILD_BRANCH_NAME', defaultValue: 'master', description: 'Which branch to build? Set if you are not on a multibranch pipeline.')
-        booleanParam(name: 'RELEASE', defaultValue: false, description: 'Is this build for a release?')
-        string(name: 'PROJECT_VERSION', defaultValue: '', description: 'Optional if not RELEASE. If RELEASE, cannot be empty.')
+        string(name: 'DISPLAY_NAME', defaultValue: 'full-no-build', description: 'Setup a specific build display name')
+        string(name: 'BUILD_BRANCH_NAME', defaultValue: '7.14', description: 'Which branch to build? Set if you are not on a multibranch pipeline.')
+        string(name: 'GIT_AUTHOR', defaultValue: 'Kevin-Mok', description: 'Which Git author repository ?')
+        booleanParam(name: 'RELEASE', defaultValue: true, description: 'Is this build for a release?')
+        string(name: 'PROJECT_VERSION', defaultValue: '7.14.0', description: 'Optional if not RELEASE. If RELEASE, cannot be empty.')
     }
     environment {
         MAVEN_OPTS = '-Xms1024m -Xmx4g'
+        BOT_CREDENTIALS_ID = "kmok-github-bot"
     }
     tools {
         maven 'kie-maven-3.6.2'
@@ -26,7 +28,6 @@ pipeline {
         stage("Initialize") {
             steps {
                 script {
-                    cleanWs()
                     if (params.DISPLAY_NAME != "") {
                         currentBuild.displayName = params.DISPLAY_NAME
                     }
@@ -47,7 +48,13 @@ pipeline {
         stage('Clone repositories') { 
             steps {
                 dir("kogito-runtimes") {
-                    checkout(githubscm.resolveRepository("kogito-runtimes", "Kevin-Mok", env.BRANCH_NAME, false))
+                    checkout(githubscm.resolveRepository("kogito-runtimes", params.GIT_AUTHOR, env.BRANCH_NAME, false))
+                }
+                dir("kogito-apps") {
+                    checkout(githubscm.resolveRepository("kogito-apps", params.GIT_AUTHOR, env.BRANCH_NAME, false))
+                }
+                dir("kogito-examples") {
+                    checkout(githubscm.resolveRepository("kogito-examples", params.GIT_AUTHOR, env.BRANCH_NAME, false))
                 }
             }
         }
@@ -59,6 +66,12 @@ pipeline {
                 dir("kogito-runtimes") {
                     prepareForPR()
                 }
+                dir("kogito-apps") {
+                    prepareForPR()
+                }
+                dir("kogito-examples") {
+                    prepareForPR()
+                }
             }
         }
         stage('Setup Maven release config'){
@@ -67,7 +80,7 @@ pipeline {
             }
             steps {
                 configFileProvider([configFile(fileId: '771ff52a-a8b4-40e6-9b22-d54c7314aa1e', targetLocation: 'maven-settings.xml', variable: 'MAVEN_SETTINGS_FILE')]){
-                    sh "echo '-B -s ${MAVEN_SETTINGS_FILE}' | tee kogito-runtimes/.mvn/maven.config"
+                    sh "echo '-B -s ${MAVEN_SETTINGS_FILE}' | tee kogito-{runtimes,apps,examples}/.mvn/maven.config"
                 }
             }
         }
@@ -77,6 +90,16 @@ pipeline {
             }
             steps {
                 dir("kogito-runtimes") {
+                    script {
+                        maven.mvnVersionsSet(getProjectVersion())
+                    }
+                }
+                dir("kogito-apps") {
+                    script {
+                        maven.mvnVersionsUpdateParentAndChildModules(getProjectVersion())
+                    }
+                }
+                dir("kogito-examples") {
                     script {
                         maven.mvnVersionsSet(getProjectVersion())
                     }
@@ -91,6 +114,16 @@ pipeline {
                 dir("kogito-runtimes") {
                     script {
                         commitAndCreatePR("kogito-runtimes")
+                    }
+                }
+                dir("kogito-apps") {
+                    script {
+                        commitAndCreatePR("kogito-apps")
+                    }
+                }
+                dir("kogito-examples") {
+                    script {
+                        commitAndCreatePR("kogito-examples")
                     }
                 }
             }
@@ -132,17 +165,30 @@ void prepareForPR() {
     githubscm.createBranch(getProjectVersion())
 }
 
+void addNotIgnoredPoms() {
+    // based on https://stackoverflow.com/a/59888964/8811872
+    sh '''
+    find . -type f -name 'pom.xml' > found_poms.txt
+    poms_to_add=""
+    while IFS= read -r pom; do
+        if ! git check-ignore -q "\$pom"; then
+            poms_to_add="\$poms_to_add \$pom"
+        fi
+    done < found_poms.txt
+    rm found_poms.txt
+    git add \$poms_to_add
+    '''
+}
+
 void commitAndCreatePR(String repo) {
     def commitMsg = "Update project version to ${getProjectVersion()} for release"
-
+    def prBody = "Generated by build ${BUILD_TAG}: ${BUILD_URL}"
     // Not using githubscm.commitChanges() because globbing won't work.
     // See: https://github.com/kiegroup/kogito-runtimes/pull/570#discussion_r449268738
-    sh "git config user.name '${env.GIT_COMMITTER_NAME}'"
-    sh "git config user.email '${env.GIT_COMMITTER_EMAIL}'"
-    sh "git add \$(find . -type f -name 'pom.xml')"
+    addNotIgnoredPoms()
     sh "git commit -m '${commitMsg}'"
     githubscm.pushObject("origin", getProjectVersion(), BOT_CREDENTIALS_ID)
-    deployProperties["${repo}.pr.link"] = githubscm.createPR(commitMsg, "master", BOT_CREDENTIALS_ID)
+    deployProperties["${repo}.pr.link"] = githubscm.createPR(commitMsg, prBody, getBuildBranch(), env.BOT_CREDENTIALS_ID)
 }
 
 boolean isRelease() {
@@ -155,10 +201,6 @@ String getBuildBranch(){
 
 String getProjectVersion(){
     return params.PROJECT_VERSION
-}
-
-String getCommitMessage(){
-    return "Update project version to ${getProjectVersion()} for release"
 }
 
 void setDeployPropertyIfNeeded(String key, def value){
