@@ -28,6 +28,7 @@ pipeline {
         stage("Initialize") {
             steps {
                 script {
+                    cleanWs()
                     if (params.DISPLAY_NAME != "") {
                         currentBuild.displayName = params.DISPLAY_NAME
                     }
@@ -92,6 +93,7 @@ pipeline {
                 dir("kogito-runtimes") {
                     script {
                         maven.mvnVersionsSet(getProjectVersion())
+                        sh "mvn -B clean install -DskipTests"
                     }
                 }
                 dir("kogito-apps") {
@@ -111,11 +113,11 @@ pipeline {
                 expression { return isRelease() }
             }
             steps {
-                dir("kogito-runtimes") {
+                /* dir("kogito-runtimes") {
                     script {
                         commitAndCreatePR("kogito-runtimes")
                     }
-                }
+                } */
                 dir("kogito-apps") {
                     script {
                         commitAndCreatePR("kogito-apps")
