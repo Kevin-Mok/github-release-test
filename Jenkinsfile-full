@@ -77,8 +77,8 @@ pipeline {
             steps{
                 dir("kogito-runtimes") {
                     checkoutRepo("kogito-runtimes")
-                    /* mergeAndPush("kogito-runtimes")
-                    tagLatest() */
+                    mergeAndPush("kogito-runtimes")
+                    tagLatest()
                 }
             }
         }
@@ -91,8 +91,8 @@ pipeline {
             steps{
                 dir("kogito-apps") {
                     checkoutRepo("kogito-apps")
-                    /* mergeAndPush("kogito-apps")
-                    tagLatest() */
+                    mergeAndPush("kogito-apps")
+                    tagLatest()
                 }
             }
         }
@@ -105,8 +105,8 @@ pipeline {
             steps{
                 dir("kogito-examples") {
                     checkoutRepo("kogito-examples")
-                    /* mergeAndPush("kogito-examples")
-                    tagLatest() */
+                    mergeAndPush("kogito-examples")
+                    tagLatest()
                 }
             }
         }
@@ -133,27 +133,6 @@ pipeline {
                 }
             }
         }
-        stage('Create/merge apps snapshot PR'){
-            when {
-                expression { return isRelease() && getProjectVersion() != "" }
-            }
-            steps {
-                dir("kogito-apps-bot") {
-                    script {
-                        prepareForPR("kogito-apps")
-                        maven.mvnVersionsUpdateParentAndChildModules(getSnapshotVersion())
-                        commitAndCreatePR("kogito-apps")
-                    }
-                }
-                dir("kogito-apps") {
-                    script {
-                        if (getDeployProperty('kogito-apps.pr.link') != ''){
-                            mergeAndPush("kogito-apps")
-                        }
-                    }
-                }
-            }
-        }
         stage('Create/merge examples snapshot PR'){
             when {
                 expression { return isRelease() && getProjectVersion() != "" }
@@ -170,6 +149,27 @@ pipeline {
                     script {
                         if (getDeployProperty('kogito-examples.pr.link') != ''){
                             mergeAndPush("kogito-examples")
+                        }
+                    }
+                }
+            }
+        }
+        stage('Create/merge apps snapshot PR'){
+            when {
+                expression { return isRelease() && getProjectVersion() != "" }
+            }
+            steps {
+                dir("kogito-apps-bot") {
+                    script {
+                        prepareForPR("kogito-apps")
+                        maven.mvnVersionsUpdateParentAndChildModules(getSnapshotVersion())
+                        commitAndCreatePR("kogito-apps")
+                    }
+                }
+                dir("kogito-apps") {
+                    script {
+                        if (getDeployProperty('kogito-apps.pr.link') != ''){
+                            mergeAndPush("kogito-apps")
                         }
                     }
                 }
