@@ -113,11 +113,11 @@ pipeline {
                 expression { return isRelease() }
             }
             steps {
-                /* dir("kogito-runtimes") {
+                dir("kogito-runtimes") {
                     script {
                         commitAndCreatePR("kogito-runtimes")
                     }
-                } */
+                }
                 dir("kogito-apps") {
                     script {
                         commitAndCreatePR("kogito-apps")
@@ -142,6 +142,8 @@ pipeline {
                                  subject: "${pipelineName} #${getBuildBranch()}",
                                  to: ZULIP_EMAIL
                     } */
+                    echo "${pipelineName} #${env.BUILD_NUMBER} is ready for release and needs a staging repository URL: ${env.BUILD_URL}input"
+                    echo "${pipelineName} #${getBuildBranch()}"
                     deployProperties["staging-repo.url"] = input(message: "Enter staging repository URL:", parameters: [string(name: 'STAGING_REPO_URL')])
                 }
             }
