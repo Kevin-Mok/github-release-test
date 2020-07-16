@@ -1,0 +1,22 @@
+@Library('jenkins-pipeline-shared-libraries')_
+
+pipeline {
+    agent { label 'kie-rhel7-priority' }
+    environment {
+        GOPATH = "$WORKSPACE/go"
+        PATH = "$PATH:$GOPATH/bin"
+    }
+    stages {
+        stage('Release') {
+            steps {
+                script {
+                    checkout(githubscm.resolveRepository("kogito-cloud-operator", "kiegroup", "master", false))
+                    sh """
+                    make build-cli
+                    ls -l build/_output/bin/kogito
+                    """
+                }
+            }
+        }
+    }
+}
