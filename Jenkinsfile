@@ -1,7 +1,6 @@
 pipeline {
-    agent any
+    agent { label 'kie-rhel7-priority' }
     environment {
-        GITHUB_TOKEN = credentials('nzxt-jenkins')
         GOPATH = "$WORKSPACE/go"
         PATH = "$PATH:$GOPATH/bin"
     }
@@ -9,11 +8,13 @@ pipeline {
         stage('Release') {
             steps {
                 script {
-                    sh """
-                    echo $PATH
-                    go get github.com/github-release/github-release
-                    github-release info -u Kevin-Mok -r github-release-test
-                    """
+                    withCredentials([usernamePassword(credentialsId: 'kmok-github-bot', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]){
+                        sh """
+                        echo $PATH
+                        go get github.com/github-release/github-release
+                        github-release info -u Kevin-Mok-Bot -r github-release-test
+                        """
+                    }
                 }
             }
         }
