@@ -1,3 +1,10 @@
+    environment {
+        GOPATH = "$WORKSPACE/go"
+        PATH = "$PATH:$GOPATH/bin"
+    }
+
+                        echo $PATH
+
                     export GITHUB_TOKEN=${GITHUB_TOKEN}
                     echo $GITHUB_TOKEN
                     echo $GOPATH
