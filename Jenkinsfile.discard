@@ -4,9 +4,4 @@
     }
 
                         echo $PATH
-
-                    export GITHUB_TOKEN=${GITHUB_TOKEN}
-                    echo $GITHUB_TOKEN
-                    echo $GOPATH
-                    go get github.com/github-release/github-release
-                    github-release info -u Kevin-Mok -r github-release-test
+                        github-release info -u Kevin-Mok-Bot -r github-release-test
