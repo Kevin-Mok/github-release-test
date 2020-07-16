@@ -1,0 +1,27 @@
+@Library('jenkins-pipeline-shared-libraries')_
+
+pipeline {
+    /* agent { label 'kie-rhel7-priority' } */
+    agent any
+    stages {
+        stage('Release') {
+            steps {
+                script {
+                    /* def checkoutBranch = "7.13.2-SNAPSHOT" */
+                    def checkoutBranch = "master"
+                    def pushBranch = "KOGITO-2415-204"
+                    cleanWs()
+                    checkout(githubscm.resolveRepository("jenkins-test", "Kevin-Mok-Bot", checkoutBranch, false))
+                    sh """
+                    git checkout ${checkoutBranch}
+                    """
+                    githubscm.createBranch(pushBranch)
+                    withCredentials([usernamePassword(credentialsId: "kmok-github-bot", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                        sh("git config --local credential.helper \"!f() { echo username=\\$GIT_USERNAME; echo password=\\$GIT_PASSWORD; }; f\"")
+                        sh("git push --force")
+                    }
+                }
+            }
+        }
+    }
+}
