@@ -1,0 +1,45 @@
+@Library('jenkins-pipeline-shared-libraries')_
+
+pipeline {
+    agent { label 'kie-rhel7-priority' }
+    environment {
+        GITHUB_REPO = "kogito-cloud-operator"
+        VERSION = "7.15.0"
+        BUILD_BRANCH = "0.10.x"
+    }
+    stages {
+        stage('Release') {
+            steps {
+                script {
+                    cleanWs()
+                    checkout(githubscm.resolveRepository(GITHUB_REPO, "Kevin-Mok-Bot", "master", false))
+                    sh "./hack/go-build-cli.sh true ${getGitTag()}"
+                    def releaseName = "Kogito Operator and CLI Version ${getGitTag()}" 
+                    def description = "Kogito Operator is an OpenShift based operator for deployment of Kogito Runtimes from source. Additionally, to facilitate interactions with the operator we also offer a CLI (Command Line Interface) that can deploy Kogito applications for you." 
+                    def releasePath = "build/_output/release/" 
+                    def cliBaseName = "kogito-cli-${getGitTag()}" 
+                    def darwinFileName = "${cliBaseName}-darwin-amd64.tar.gz"
+                    def linuxFileName = "${cliBaseName}-linux-amd64.tar.gz"
+                    def windowsFileName = "${cliBaseName}-windows-amd64.zip"
+                    withCredentials([usernamePassword(credentialsId: 'kmok-github-bot', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]){
+                        sh """
+                        github-release release --tag ${getGitTag()} --target '${getBuildBranch()}' --name '${releaseName}' --description '${description}' --pre-release
+                        github-release upload --tag ${getGitTag()} --name '${darwinFileName}' --file '${releasePath}${darwinFileName}'
+                        github-release upload --tag ${getGitTag()} --name '${linuxFileName}' --file '${releasePath}${linuxFileName}'
+                        github-release upload --tag ${getGitTag()} --name '${windowsFileName}' --file '${releasePath}${windowsFileName}'
+                        """
+                    }
+                }
+            }
+        }
+    }
+}
+
+String getGitTag() {
+    return env.VERSION
+}
+
+String getBuildBranch() {
+    return env.BUILD_BRANCH
+}
+
