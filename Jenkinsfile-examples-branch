@@ -1,0 +1,28 @@
+@Library('jenkins-pipeline-shared-libraries')_
+
+pipeline {
+    agent { label 'kie-rhel7-priority' }
+    /* agent any */
+    stages {
+        stage('Release') {
+            steps {
+                script {
+                    /* def checkoutBranch = "ederign-patch-1" */
+                    def checkoutBranch = "master"
+                    def pushBranch = "kmok-test"
+                    cleanWs()
+                    dir("kogito-examples") {
+                        checkout(githubscm.resolveRepository("kogito-examples", "kiegroup", checkoutBranch, false))
+                        sh "echo test >> README.md"
+                        githubscm.createBranch(pushBranch)
+                        withCredentials([usernamePassword(credentialsId: "kie-ci", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                            sh("git config --local credential.helper \"!f() { echo username=\\$GIT_USERNAME; echo password=\\$GIT_PASSWORD; }; f\"")
+                            /* sh("git push --force origin ${pushBranch}") */
+                            sh("git push origin ${pushBranch}")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

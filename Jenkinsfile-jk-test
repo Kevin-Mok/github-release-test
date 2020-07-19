@@ -25,3 +25,17 @@ pipeline {
         }
     }
 }
+
+void setDefaultBranch(String repo, String defaultBranch) {
+    def newDefaultBranch = sh(script: "gh api -XPATCH 'repos/kiegroup/${repo}' -f default_branch=${branch} | jq '.default_branch'", returnStdout: true).trim()
+    echo "[INFO] kiegroup/${repo}'s default branch has been updated to ${newDefaultBranch}."
+}
+
+void forcePushProtectedBranch(String repo, String defaultBranch, String tempBranch) {
+    setDefaultBranch(repo, tempBranch)
+    withCredentials([usernamePassword(credentialsId: "kie-ci", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+        sh("git config --local credential.helper \"!f() { echo username=\\$GIT_USERNAME; echo password=\\$GIT_PASSWORD; }; f\"")
+        sh("git push --force origin ${defaultBranch}")
+    }
+    setDefaultBranch(repo, defaultBranch)
+}
