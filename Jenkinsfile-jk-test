@@ -3,6 +3,10 @@
 pipeline {
     agent { label 'kie-rhel7-priority' }
     /* agent any */
+    options {
+        buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '5')
+        timeout(time: 120, unit: 'MINUTES')
+    }
     stages {
         stage('Release') {
             steps {
@@ -16,6 +20,8 @@ pipeline {
                         checkout(githubscm.resolveRepository("jenkins-test", "Kevin-Mok-Bot", checkoutBranch, false))
                         githubscm.createBranch("stable")
                         forcePushProtectedBranch("jenkins-test", "stable", "master")
+                        /* setDefaultBranch("jenkins-test", "master") */
+                        /* setDefaultBranch("jenkins-test", "stable") */
                     }
                 }
             }
@@ -35,7 +41,13 @@ void installGithubCLI() {
 void setDefaultBranch(String repo, String defaultBranch) {
     withCredentials([usernamePassword(credentialsId: "kmok-github-bot", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GITHUB_TOKEN')]) {
         def newDefaultBranch = sh(script: "../gh api -XPATCH 'repos/Kevin-Mok-Bot/${repo}' -f default_branch=${defaultBranch} | jq '.default_branch'", returnStdout: true).trim()
-        echo "[INFO] kiegroup/${repo}'s default branch has been updated to ${newDefaultBranch}."
+        /* def newDefaultBranch = sh(script: "../gh api -XPATCH 'repos/bad/${repo}' -f default_branch=${defaultBranch} | jq '.default_branch'", returnStdout: true).trim() */
+        echo newDefaultBranch
+        if (newDefaultBranch == "\"${defaultBranch}\"") {
+            echo "[INFO] kiegroup/${repo}'s default branch has been updated to ${newDefaultBranch}."
+        } else {
+            error "Couldn't update default branch."
+        }
     }
 }
 
