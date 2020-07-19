@@ -12,13 +12,17 @@ pipeline {
                     def pushBranch = "kmok-test"
                     cleanWs()
                     dir("kogito-examples") {
-                        checkout(githubscm.resolveRepository("kogito-examples", "kiegroup", checkoutBranch, false))
-                        sh "echo test >> README.md"
+                        /* checkout(githubscm.resolveRepository("kogito-examples", "kiegroup", checkoutBranch, false)) */
+                        checkout(githubscm.resolveRepository("kogito-examples", "kiegroup", pushBranch, false))
                         githubscm.createBranch(pushBranch)
+                        sh """
+                        git commit --amend --no-edit
+                        git status
+                        """
                         withCredentials([usernamePassword(credentialsId: "kie-ci", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
                             sh("git config --local credential.helper \"!f() { echo username=\\$GIT_USERNAME; echo password=\\$GIT_PASSWORD; }; f\"")
                             /* sh("git push --force origin ${pushBranch}") */
-                            sh("git push origin ${pushBranch}")
+                            sh("git push --force origin ${pushBranch}")
                         }
                     }
                 }
