@@ -1,8 +1,8 @@
 @Library('jenkins-pipeline-shared-libraries')_
 
 pipeline {
-    /* agent { label 'kie-rhel7-priority' } */
-    agent any
+    agent { label 'kie-rhel7-priority' }
+    /* agent any */
     stages {
         stage('Release') {
             steps {
@@ -11,14 +11,11 @@ pipeline {
                     def checkoutBranch = "master"
                     def pushBranch = "KOGITO-2415-204"
                     cleanWs()
-                    checkout(githubscm.resolveRepository("jenkins-test", "Kevin-Mok-Bot", checkoutBranch, false))
-                    sh """
-                    git checkout ${checkoutBranch}
-                    """
-                    githubscm.createBranch(pushBranch)
-                    withCredentials([usernamePassword(credentialsId: "kmok-github-bot", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
-                        sh("git config --local credential.helper \"!f() { echo username=\\$GIT_USERNAME; echo password=\\$GIT_PASSWORD; }; f\"")
-                        sh("git push --force")
+                    installGithubCLI()
+                    dir("jenkins-test") {
+                        checkout(githubscm.resolveRepository("jenkins-test", "Kevin-Mok-Bot", checkoutBranch, false))
+                        githubscm.createBranch("stable")
+                        forcePushProtectedBranch("jenkins-test", "stable", "master")
                     }
                 }
             }
@@ -26,16 +23,30 @@ pipeline {
     }
 }
 
+void installGithubCLI() {
+    sh """
+    wget https://github.com/cli/cli/releases/download/v0.11.0/gh_0.11.0_linux_amd64.tar.gz
+    tar xzf gh_0.11.0_linux_amd64.tar.gz
+    mv gh_0.11.0_linux_amd64/bin/gh .
+    rm -r gh_0.11.0_linux_amd64*
+    """
+}
+
 void setDefaultBranch(String repo, String defaultBranch) {
-    def newDefaultBranch = sh(script: "gh api -XPATCH 'repos/kiegroup/${repo}' -f default_branch=${branch} | jq '.default_branch'", returnStdout: true).trim()
-    echo "[INFO] kiegroup/${repo}'s default branch has been updated to ${newDefaultBranch}."
+    withCredentials([usernamePassword(credentialsId: "kmok-github-bot", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GITHUB_TOKEN')]) {
+        def newDefaultBranch = sh(script: "../gh api -XPATCH 'repos/Kevin-Mok-Bot/${repo}' -f default_branch=${defaultBranch} | jq '.default_branch'", returnStdout: true).trim()
+        echo "[INFO] kiegroup/${repo}'s default branch has been updated to ${newDefaultBranch}."
+    }
 }
 
 void forcePushProtectedBranch(String repo, String defaultBranch, String tempBranch) {
     setDefaultBranch(repo, tempBranch)
-    withCredentials([usernamePassword(credentialsId: "kie-ci", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
-        sh("git config --local credential.helper \"!f() { echo username=\\$GIT_USERNAME; echo password=\\$GIT_PASSWORD; }; f\"")
-        sh("git push --force origin ${defaultBranch}")
+    withCredentials([usernamePassword(credentialsId: "kmok-github-bot", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+        sh """
+        git config --local credential.helper \"!f() { echo username=\\$GIT_USERNAME; echo password=\\$GIT_PASSWORD; }; f\"
+        git push --delete origin ${defaultBranch}
+        git push origin ${defaultBranch}
+        """
     }
     setDefaultBranch(repo, defaultBranch)
 }

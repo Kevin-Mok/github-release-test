@@ -22,7 +22,7 @@ pipeline {
                         withCredentials([usernamePassword(credentialsId: "kie-ci", usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
                             sh("git config --local credential.helper \"!f() { echo username=\\$GIT_USERNAME; echo password=\\$GIT_PASSWORD; }; f\"")
                             /* sh("git push --force origin ${pushBranch}") */
-                            sh("git push --force origin ${pushBranch}")
+                            sh("git push --delete origin ${pushBranch}")
                         }
                     }
                 }
