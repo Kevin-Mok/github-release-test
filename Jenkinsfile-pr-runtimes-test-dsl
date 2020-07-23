@@ -1,0 +1,57 @@
+pipelineJob('custom/kmok/KOGITO-1031/kogito-runtimes-test') {
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    remote {
+                        github('Kevin-Mok/jenkins-test')
+                    }
+                    branch('*/1031')
+                }
+            }
+            scriptPath('Jenkinsfile-pr-runtimes')
+            lightweight(false)
+        }
+    }
+    properties {
+        githubProjectUrl('https://github.com/Kevin-Mok-Bot/jenkins-test')
+    }
+    triggers {
+        ghprbTrigger {
+            adminlist('Kevin-Mok-Bot')
+            whitelist('')
+            orgslist('')
+            // use cron to check for new PR's/comments since webhook can't send payload to RHBA Jenkins on VPN?
+            cron('H/2 * * * *')
+            triggerPhrase('Jenkins test this')
+            onlyTriggerPhrase(true)
+            useGitHubHooks(true)
+            permitAll(false)
+            autoCloseFailedPullRequests(false)
+            displayBuildErrorsOnDownstreamBuilds(false)
+            commentFilePath("")
+            skipBuildPhrase('')
+            blackListCommitAuthor('')
+            allowMembersOfWhitelistedOrgsAsAdmin(true)
+            msgSuccess('Build succeeded.')
+            msgFailure('Build failed.')
+            commitStatusContext('Linux')
+            gitHubAuthId('kmok-github-bot')
+            buildDescTemplate('')
+            blackListLabels('')
+            whiteListLabels('')
+            extensions {
+                ghprbSimpleStatus {
+                    showMatrixStatus(true)
+                    commitStatusContext('Linux')
+                    statusUrl('${BUILD_URL}display/redirect')
+                    triggeredStatus('Build triggered.')
+                    startedStatus('Build started.')
+                    addTestResults(true)
+                }
+            }
+            includedRegions('')
+            excludedRegions('')
+        }
+    }
+}

@@ -1,0 +1,16 @@
+pipelineJob('custom/kmok/KOGITO-1031/kogito-runtimes-deploy-clone-test') {
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    remote {
+                        github('Kevin-Mok/jenkins-test')
+                    }
+                    branch('*/1031')
+                }
+            }
+            scriptPath('Jenkinsfile-deploy-clone')
+            lightweight(false)
+        }
+    }
+}

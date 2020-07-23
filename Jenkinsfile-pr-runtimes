@@ -1,6 +1,6 @@
 @Library('jenkins-pipeline-shared-libraries')_
 
-RUNTIMES_DEPLOY = "kogito-runtimes-deploy"
+RUNTIMES_DEPLOY = "kogito-runtimes-deploy-clone-test"
 IMAGES_DEPLOY = "kogito-images-deploy"
 OPERATOR_DEPLOY = "kogito-operator-deploy"
 RUNTIMES_PROMOTE = "kogito-runtimes-promote"
@@ -86,7 +86,7 @@ pipeline {
 }
 
 def buildJob(String jobName, List buildParams, boolean propagate=true){
-    def job = build(job: "../${jobName}", wait: true, parameters: buildParams, propagate: propagate)
+    def job = build(job: "${jobName}", wait: true, parameters: buildParams, propagate: propagate)
     JOBS[jobName] = job
 
     // Set Unstable if we don't propagate and job failed
