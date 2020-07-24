@@ -13,8 +13,19 @@ pipelineJob('custom/kmok/KOGITO-1031/kogito-runtimes-test') {
             lightweight(false)
         }
     }
+    concurrentBuild(false)
     properties {
         githubProjectUrl('https://github.com/Kevin-Mok-Bot/jenkins-test')
+        buildDiscarder {
+            strategy {
+                logRotator {
+                    daysToKeepStr('')
+                    numToKeepStr('5')
+                    artifactDaysToKeepStr('')
+                    artifactNumToKeepStr('')
+                }
+            }
+        }
     }
     triggers {
         ghprbTrigger {
