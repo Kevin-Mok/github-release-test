@@ -1,0 +1,19 @@
+pipeline {
+    agent any
+    parameters {
+        string(name: 'param', defaultValue: '')
+    }
+    environment {
+        PARAM = params.param
+    }
+
+    stages {
+        stage('Release') {
+            steps {
+                script {
+                    echo env.PARAM
+                }
+            }
+        }
+    }
+}

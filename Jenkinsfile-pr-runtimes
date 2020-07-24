@@ -34,13 +34,8 @@ pipeline {
         IMAGE_REGISTRY = "quay.io"
         IMAGE_NAMESPACE = "kiegroup"
         IMAGE_NAME_SUFFIX = "nightly"
-        TEMP_TAG = "temp-${BRANCH_NAME}-tests"
-        
-        // Use branch name in nightly tag as we may have parallel master and release branch builds
-        NIGHTLY_TAG = """nightly-${BRANCH_NAME}-${sh(
-                returnStdout: true,
-                script: 'date -u "+%Y-%m-%d"'
-            ).trim()}"""
+        TEMP_TAG = "temp-${getPRRepoName()}-pr-${env.ghprbPullId}-tests"
+        NIGHTLY_TAG = "${getPRRepoName()}-pr-${env.ghprbPullId}-test"
 
         BRANCH_FOR_LATEST="master"
     }
