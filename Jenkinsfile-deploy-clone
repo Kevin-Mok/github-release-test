@@ -32,6 +32,7 @@ pipeline {
         stage("Initialize") {
             steps {
                 script {
+                    echo "clone test"
                     if (params.DISPLAY_NAME != "") {
                         currentBuild.displayName = params.DISPLAY_NAME
                     }

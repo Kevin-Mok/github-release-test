@@ -36,7 +36,7 @@ pipelineJob('custom/kmok/KOGITO-1031/kogito-runtimes-test') {
             msgSuccess('Build succeeded.')
             msgFailure('Build failed.')
             commitStatusContext('Linux')
-            gitHubAuthId('kmok-github-bot')
+            gitHubAuthId('kmok-gh-bot')
             buildDescTemplate('')
             blackListLabels('')
             whiteListLabels('')

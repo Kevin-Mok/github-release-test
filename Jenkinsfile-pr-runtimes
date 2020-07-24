@@ -76,9 +76,11 @@ pipeline {
                     addStringParam(buildParams, "PR_AUTHOR", env.ghprbPullAuthorLogin)
                     addStringParam(buildParams, "PR_SOURCE_BRANCH", env.ghprbSourceBranch)
                     addStringParam(buildParams, "MAVEN_DEPLOY_REPOSITORY", env.MAVEN_REPOSITORY)
+                    echo "setup params"
                     
                     // images and operator deploy testing will use older working artifacts if that one fails
                     buildJob(RUNTIMES_DEPLOY, buildParams, false)
+                    echo "called job"
                 }
             }
         }
