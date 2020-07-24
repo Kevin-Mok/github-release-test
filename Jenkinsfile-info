@@ -11,9 +11,10 @@ pipeline {
                     def foo = 'bar'
                     withCredentials([usernamePassword(credentialsId: 'kmok-github-bot', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]){
                         sh """
-                        echo ${foo}
-                        github-release info
+                        whereis github-release
                         """
+                        /* echo ${foo}
+                        github-release info */
                     }
                 }
             }
