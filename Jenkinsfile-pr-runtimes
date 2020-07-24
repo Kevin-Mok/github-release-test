@@ -116,7 +116,7 @@ void sendNotification(){
 List getDefaultBuildParams(){
     List params = []
     addStringParam(params, "DISPLAY_NAME", "${NIGHTLY_TAG}")
-    addStringParam(params, "BUILD_BRANCH_NAME", "${BRANCH_NAME}")
+    addStringParam(params, "BUILD_BRANCH_NAME", "master")
     return params
 }
 

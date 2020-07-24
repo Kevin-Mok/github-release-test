@@ -52,6 +52,7 @@ pipeline {
         }
         stage('Clone repositories') { 
             steps {
+                cloneRepo("jenkins-test")
                 cloneRepo("kogito-runtimes")
                 cloneRepo("kogito-apps")
                 cloneRepo("kogito-examples")
