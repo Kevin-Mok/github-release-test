@@ -1,0 +1,64 @@
+@Library('jenkins-pipeline-shared-libraries')_
+
+pipeline {
+    agent { label 'kie-rhel7-priority' }
+    environment {
+        ghprbPullAuthorLogin = 'Kevin-Mok-Bot'
+    }
+    stages {
+        stage('addAuthorBranchParamsIfExist (exists)') {
+            steps {
+                script {
+                    List params = []
+                    addAuthorBranchParamsIfExist(params, 'jenkins-test', '7.13.2-SNAPSHOT')
+                    echo params.join(", ")
+                }
+            }
+        }
+        stage('addAuthorBranchParamsIfExist (!exists)') {
+            steps {
+                script {
+                    List params = []
+                    addAuthorBranchParamsIfExist(params, 'jenkins-test', '7.13.5-SNAPSHOT')
+                    echo params.join(", ")
+                }
+            }
+        }
+        stage('addExamplesParamsForOperator (exists)') {
+            steps {
+                script {
+                    List params = []
+                    addExamplesParamsForOperator(params, '0.11.x')
+                    echo params.join(", ")
+                }
+            }
+        }
+        stage('addExamplesParamsForOperator (!exists)') {
+            steps {
+                script {
+                    List params = []
+                    addExamplesParamsForOperator(params, '0.20.x')
+                    echo params.join(", ")
+                }
+            }
+        }
+    }
+}
+
+void addStringParam(List params, String key, String value){
+    params.add(string(name: key, value: value))
+}
+
+void addAuthorBranchParamsIfExist(List params, String repo, String branch) {
+    def repositoryScm = githubscm.getRepositoryScm(repo, env.ghprbPullAuthorLogin, branch)
+    if (repositoryScm != null) {
+        addStringParam(params, 'GIT_AUTHOR', env.ghprbPullAuthorLogin)
+        addStringParam(params, 'BUILD_BRANCH_NAME', branch)
+    }
+}
+
+void addExamplesParamsForOperator(List params, String branch) {
+    def repositoryScm = githubscm.getRepositoryScm('kogito-examples', env.ghprbPullAuthorLogin, branch)
+    addStringParam(params, 'EXAMPLES_REF', (repositoryScm != null) ? env.ghprbPullAuthorLogin : 'kiegroup')
+    addStringParam(params, 'EXAMPLES_URI', (repositoryScm != null) ? branch : 'master')
+}
