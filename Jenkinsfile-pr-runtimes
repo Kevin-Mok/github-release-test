@@ -1,5 +1,10 @@
 @Library('jenkins-pipeline-shared-libraries')_
 
+changeAuthor = env.ghprbPullAuthorLogin ?: CHANGE_AUTHOR
+changeBranch = env.ghprbSourceBranch ?: BRANCH_NAME
+changeTarget = env.ghprbTargetBranch ?: CHANGE_TARGET
+changeId = env.ghprbPullId ?: CHANGE_ID
+
 RUNTIMES_DEPLOY = "kogito-runtimes-deploy-clone-test"
 IMAGES_DEPLOY = "kogito-images-deploy"
 OPERATOR_DEPLOY = "kogito-operator-deploy"
@@ -34,7 +39,7 @@ pipeline {
         IMAGE_REGISTRY = "quay.io"
         IMAGE_NAMESPACE = "kiegroup"
         IMAGE_NAME_SUFFIX = "nightly"
-        BUILD_NAME = "${getPRRepoName()}-pr-${env.ghprbPullId}-tests"
+        BUILD_NAME = "${getPRRepoName()}-pr-${changeId}-tests"
         TEMP_TAG = "temp-${env.BUILD_NAME}"
 
         BRANCH_FOR_LATEST="master"
@@ -67,7 +72,7 @@ pipeline {
                     echo "Call ${RUNTIMES_DEPLOY} job"
                     def buildParams = getDefaultBuildParams()
                     addAuthorBranchParamsIfExist(buildParams, getPRRepoName())
-                    addStringParam(buildParams, "PR_TARGET_BRANCH", env.ghprbTargetBranch)
+                    addStringParam(buildParams, "PR_TARGET_BRANCH", changeTarget)
                     addStringParam(buildParams, "MAVEN_DEPLOY_REPOSITORY", env.MAVEN_REPOSITORY)
                     
                     // images and operator deploy testing will use older working artifacts if that one fails
@@ -141,10 +146,10 @@ String getPRRepoName() {
 }
 
 void addAuthorBranchParamsIfExist(List params, String repo) {
-    def repositoryScm = githubscm.getRepositoryScm(repo, env.ghprbPullAuthorLogin, env.ghprbSourceBranch)
+    def repositoryScm = githubscm.getRepositoryScm(repo, changeAuthor, changeBranch)
     if (repositoryScm != null) {
-        addStringParam(params, 'GIT_AUTHOR', env.ghprbPullAuthorLogin)
-        addStringParam(params, 'BUILD_BRANCH_NAME', env.ghprbSourceBranch)
+        addStringParam(params, 'GIT_AUTHOR', changeAuthor)
+        addStringParam(params, 'BUILD_BRANCH_NAME', changeBranch)
     }
 }
 
