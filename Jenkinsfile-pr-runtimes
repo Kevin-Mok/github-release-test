@@ -66,15 +66,12 @@ pipeline {
                 script {
                     echo "Call ${RUNTIMES_DEPLOY} job"
                     def buildParams = getDefaultBuildParams()
-                    addStringParam(buildParams, "PR_REPO", getPRRepoName())
-                    addStringParam(buildParams, "PR_AUTHOR", env.ghprbPullAuthorLogin)
-                    addStringParam(buildParams, "PR_SOURCE_BRANCH", env.ghprbSourceBranch)
+                    addAuthorBranchParamsIfExist(buildParams, getPRRepoName())
+                    addStringParam(buildParams, "PR_TARGET_BRANCH", env.ghprbTargetBranch)
                     addStringParam(buildParams, "MAVEN_DEPLOY_REPOSITORY", env.MAVEN_REPOSITORY)
-                    echo "setup params"
                     
                     // images and operator deploy testing will use older working artifacts if that one fails
                     buildJob(RUNTIMES_DEPLOY, buildParams, false)
-                    echo "called job"
                 }
             }
         }
@@ -142,3 +139,12 @@ String constructKey(String prefix, String paramId){
 String getPRRepoName() {
     return env.ghprbGhRepository.split("/")[1]
 }
+
+void addAuthorBranchParamsIfExist(List params, String repo) {
+    def repositoryScm = githubscm.getRepositoryScm(repo, env.ghprbPullAuthorLogin, env.ghprbSourceBranch)
+    if (repositoryScm != null) {
+        addStringParam(params, 'GIT_AUTHOR', env.ghprbPullAuthorLogin)
+        addStringParam(params, 'BUILD_BRANCH_NAME', env.ghprbSourceBranch)
+    }
+}
+

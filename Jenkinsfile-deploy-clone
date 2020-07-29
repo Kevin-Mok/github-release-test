@@ -2,7 +2,7 @@
 
 deployProperties = [:]
 pipeline {
-    agent { label 'kie-rhel7-priority' }
+    agent any
     parameters {
         string(name: 'DISPLAY_NAME', defaultValue: '', description: 'Setup a specific build display name')
         string(name: 'BUILD_BRANCH_NAME', defaultValue: 'master', description: 'Which branch to build? Set if you are not on a multibranch pipeline.')
@@ -12,9 +12,7 @@ pipeline {
         string(name: 'PROJECT_VERSION', defaultValue: '', description: 'Optional if not RELEASE. If RELEASE, cannot be empty.')
 
         // PR parameters to be filled out by GitHub Pull Request Builder for PR checks
-        string(name: 'PR_REPO', defaultValue: '', description: 'Which repository is the PR for? Will be automatically filled out by GitHub Pull Request Builder.')
-        string(name: 'PR_AUTHOR', defaultValue: '', description: 'Who is the author of the PR? Will be automatically filled out by GitHub Pull Request Builder.')
-        string(name: 'PR_SOURCE_BRANCH', defaultValue: '', description: 'What is the source branch of the PR? Will be automatically filled out by GitHub Pull Request Builder.')
+        string(name: 'PR_TARGET_BRANCH', defaultValue: '', description: 'What is the target branch of the PR? Will be automatically filled out by GitHub Pull Request Builder.')
     }
     environment {
         MAVEN_OPTS = '-Xms1024m -Xmx4g'
@@ -69,11 +67,7 @@ void saveReports(boolean allowEmpty=false){
 
 void cloneRepo(String repo, String dirName=repo) {
     dir(dirName) {
-        if (repo != params.PR_REPO) {
-            echo "checkout(githubscm.resolveRepository(${repo}, ${getGitAuthor()}, ${getBuildBranch()}, false))"
-        } else {
-            echo "checkout(githubscm.resolveRepository(${repo}, ${params.PR_AUTHOR}, ${params.PR_SOURCE_BRANCH}, false))"
-        }
+        githubscm.checkoutIfExists(repo, getGitAuthor(), getBuildBranch(), 'kiegroup', params.PR_TARGET_BRANCH, false)
     }
 }
 
