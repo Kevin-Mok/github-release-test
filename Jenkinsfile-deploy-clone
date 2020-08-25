@@ -5,9 +5,9 @@ pipeline {
     agent any
     parameters {
         string(name: 'DISPLAY_NAME', defaultValue: '', description: 'Setup a specific build display name')
-        string(name: 'BUILD_BRANCH_NAME', defaultValue: 'master', description: 'Which branch to build? Set if you are not on a multibranch pipeline.')
+        string(name: 'BUILD_BRANCH_NAME', defaultValue: '7.1.1', description: 'Which branch to build? Set if you are not on a multibranch pipeline.')
         string(name: 'MAVEN_DEPLOY_REPOSITORY', defaultValue: '', description: 'Specify a Maven repository to deploy the artifacts.')
-        string(name: 'GIT_AUTHOR', defaultValue: 'kiegroup', description: 'Which Git author repository ?')
+        string(name: 'GIT_AUTHOR', defaultValue: 'Kevin-Mok-Bot', description: 'Which Git author repository ?')
         booleanParam(name: 'RELEASE', defaultValue: false, description: 'Is this build for a release?')
         string(name: 'PROJECT_VERSION', defaultValue: '', description: 'Optional if not RELEASE. If RELEASE, cannot be empty.')
 
@@ -51,11 +51,9 @@ pipeline {
         stage('Clone repositories') { 
             steps {
                 cloneRepo("jenkins-test")
-                cloneRepo("kogito-runtimes")
+                /* cloneRepo("kogito-runtimes") */
                 cloneRepo("kogito-apps")
-                cloneRepo("kogito-examples")
-                cloneRepo("kogito-examples", "kogito-examples-persistence")
-                cloneRepo("kogito-examples", "kogito-examples-events")
+                /* cloneRepo("kogito-examples") */
             }
         }
     }
@@ -67,7 +65,8 @@ void saveReports(boolean allowEmpty=false){
 
 void cloneRepo(String repo, String dirName=repo) {
     dir(dirName) {
-        githubscm.checkoutIfExists(repo, getGitAuthor(), getBuildBranch(), 'kiegroup', params.PR_TARGET_BRANCH, false)
+        deleteDir()
+        githubscm.checkoutIfExists(repo, getGitAuthor(), getBuildBranch(), 'kiegroup', getDefaultBranch(repo), true)
     }
 }
 
@@ -138,13 +137,46 @@ void mavenInstall(String directory, boolean skipTests = false, String... profile
     }
 }
 
-void mavenDeploy(String directory) {
-    deployCmd = 'clean deploy'
-    if(params.MAVEN_DEPLOY_REPOSITORY != ''){
-        deployCmd += " -DaltDeploymentRepository=runtimes-artifacts::default::${params.MAVEN_DEPLOY_REPOSITORY}"
+String getDefaultBranch(String repo) {
+    // if not triggered by PR
+    if (params.PR_TARGET_BRANCH == '') {
+        return 'master'
     }
-    dir(directory) {
-        maven.runMavenWithSubmarineSettings(deployCmd, true)
+    // if PR target branch exists
+    def repositoryScm = githubscm.getRepositoryScm(repo, 'kiegroup', params.PR_TARGET_BRANCH)
+    if (repositoryScm != null) {
+        return params.PR_TARGET_BRANCH
     }
+    // if target branch doesn't exist in repos other than PR repo
+    return 'master'
 }
 
+String getBotBranch(){
+    return "${getProjectVersion()}-${env.BOT_BRANCH_HASH}"
+}
+
+String getBotAuthor(){
+    return env.GIT_AUTHOR_BOT
+}
+
+void mavenCleanInstall(String directory, boolean skipTests = false, List profiles = [], String extraArgs = '') {
+    runMaven('clean install', directory, skipTests, profiles, extraArgs)
+}
+
+void mavenDeploy(String directory) {
+    extraArgs = params.MAVEN_DEPLOY_REPOSITORY != '' ? "-DaltDeploymentRepository=runtimes-artifacts::default::${params.MAVEN_DEPLOY_REPOSITORY}" : ''
+    runMaven('clean deploy', directory, true, [], extraArgs)
+}
+
+void runMaven(String command, String directory, boolean skipTests = false, List profiles = [], String extraArgs = '') {
+    mvnCmd = command
+    if(profiles.size() > 0){
+        mvnCmd += " -P${profiles.join(',')}"
+    }
+    if(extraArgs != ''){
+        mvnCmd += " ${extraArgs}"
+    }
+    dir(directory) {
+        maven.runMavenWithSubmarineSettings(mvnCmd, skipTests)
+    }
+}
