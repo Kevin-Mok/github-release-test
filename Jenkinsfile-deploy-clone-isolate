@@ -2,7 +2,7 @@
 
 deployProperties = [:]
 pipeline {
-    agent any
+    agent { label 'kie-rhel7-priority' }
     parameters {
         string(name: 'DISPLAY_NAME', defaultValue: '', description: 'Setup a specific build display name')
         string(name: 'BUILD_BRANCH_NAME', defaultValue: '7.1.1', description: 'Which branch to build? Set if you are not on a multibranch pipeline.')
@@ -51,7 +51,37 @@ pipeline {
         stage('Clone repositories') { 
             steps {
                 script {
-                    githubscm.checkoutIfExists('jenkins-test', 'Kevin-Mok-Bot', '7.1.1', 'kiegroup', 'master', true)
+                    def repository = 'jenkins-test'
+                    def author = 'Kevin-Mok-Bot'
+                    def branches = '7.1.1'
+                    def defaultAuthor = 'kiegroup'
+                    def defaultBranches = 'master'
+                    def mergeTarget = true
+                    def credentials = ['token': 'kie-ci1-token', 'usernamePassword': 'kie-ci']
+
+                    assert credentials['token']
+                    assert credentials['usernamePassword']
+                    def sourceAuthor = author
+                    echo 'before fork'
+                    def sourceRepository = githubscm.getForkedProjectName(defaultAuthor, repository, sourceAuthor, credentials['token']) ?: repository
+                    echo 'after fork'
+                    // Checks source group and branch (for cases where the branch has been created in the author's forked project)
+                    def repositoryScm = githubscm.getRepositoryScm(sourceRepository, author, branches, credentials['usernamePassword'])
+                    if (repositoryScm == null) {
+                        // Checks target group and and source branch (for cases where the branch has been created in the target project itself
+                        repositoryScm = githubscm.getRepositoryScm(repository, defaultAuthor, branches, credentials['usernamePassword'])
+                        sourceAuthor = repositoryScm ? defaultAuthor : author
+                    }
+                    if (repositoryScm != null && githubscm.hasPullRequest(defaultAuthor, repository, author, branches, credentials['token'])) {
+                        if (mergeTarget) {
+                            githubscm.mergeSourceIntoTarget(sourceRepository, sourceAuthor, branches, repository, defaultAuthor, defaultBranches, credentials['usernamePassword'])
+                        } else {
+                            checkout repositoryScm
+                        }
+                    } else {
+                        checkout(githubscm.resolveRepository(repository, defaultAuthor, defaultBranches, false, credentials['usernamePassword']))
+                    }
+                    /* githubscm.checkoutIfExists('jenkins-test', 'Kevin-Mok-Bot', '7.1.1', 'kiegroup', 'master', true) */
                 }
             }
         }
