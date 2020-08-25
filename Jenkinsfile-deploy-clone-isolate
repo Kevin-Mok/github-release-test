@@ -48,10 +48,27 @@ pipeline {
                 }
             }
         }
+        /* stage('getForkedProjectName') { 
+            steps {
+                script {
+                    def result = null
+                    withCredentials([string(credentialsId: 'kie-ci1-token', variable: 'OAUTHTOKEN')]) {
+                        def curlResult = sh(returnStdout: true, script: "curl -H \"Authorization: token ${OAUTHTOKEN}\" 'https://api.github.com/repos/kiegroup/${repository}/forks'")?.trim()
+                        if (curlResult) {
+                            def forkedProjects = readJSON text: curlResult
+                            def forkedProject = forkedProjects.find { it.owner.login == owner }
+                            result = forkedProject ? forkedProject.name : null
+                        }
+                    }
+                }
+            }
+        } */
         stage('Clone repositories') { 
             steps {
                 script {
-                    def repository = 'jenkins-test'
+                    def sourceRepository = githubscm.getForkedProjectName(defaultAuthor, repository, sourceAuthor, credentials['token']) ?: repository
+                    /* githubscm.checkoutIfExists('jenkins-test', 'Kevin-Mok-Bot', '7.1.1', 'kiegroup', 'master', true) */
+                    /* def repository = 'jenkins-test'
                     def author = 'Kevin-Mok-Bot'
                     def branches = '7.1.1'
                     def defaultAuthor = 'kiegroup'
@@ -80,8 +97,7 @@ pipeline {
                         }
                     } else {
                         checkout(githubscm.resolveRepository(repository, defaultAuthor, defaultBranches, false, credentials['usernamePassword']))
-                    }
-                    /* githubscm.checkoutIfExists('jenkins-test', 'Kevin-Mok-Bot', '7.1.1', 'kiegroup', 'master', true) */
+                    } */
                 }
             }
         }
