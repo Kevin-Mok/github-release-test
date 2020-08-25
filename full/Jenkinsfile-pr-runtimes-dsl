@@ -1,0 +1,87 @@
+pipelineJob('custom/kmok/KOGITO-1031-full/kogito-runtimes-bdd') {
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    remote {
+                        github('Kevin-Mok/jenkins-test')
+                    }
+                    branch('*/1031')
+                }
+            }
+            scriptPath('full/Jenkinsfile-pr-runtimes')
+            lightweight(false)
+        }
+    }
+    concurrentBuild(false)
+    properties {
+        githubProjectUrl('https://github.com/Kevin-Mok/kogito-runtimes/')
+        buildDiscarder {
+            strategy {
+                logRotator {
+                    daysToKeepStr('')
+                    numToKeepStr('5')
+                    artifactDaysToKeepStr('')
+                    artifactNumToKeepStr('')
+                }
+            }
+        }
+    }
+    triggers {
+        ghprbTrigger {
+            adminlist('Kevin-Mok Kevin-Mok-Bot')
+            whitelist('')
+            orgslist('')
+            // use cron to check for new PR's/comments since webhook can't send payload to RHBA Jenkins on VPN?
+            cron('* * * * *')
+            triggerPhrase('.*[j|J]enkins,? run BDD tests.*')
+            onlyTriggerPhrase(true)
+            useGitHubHooks(false)
+            permitAll(false)
+            autoCloseFailedPullRequests(false)
+            displayBuildErrorsOnDownstreamBuilds(false)
+            commentFilePath("")
+            skipBuildPhrase('')
+            blackListCommitAuthor('')
+            allowMembersOfWhitelistedOrgsAsAdmin(true)
+            msgSuccess('Build succeeded.')
+            msgFailure('Build failed.')
+            commitStatusContext('Linux')
+            gitHubAuthId('kmok-gh-bot')
+            buildDescTemplate('')
+            blackListLabels('')
+            whiteListLabels('')
+            extensions {
+                // not sure if needed? copied from KIE/kogito/ghprb-webhooks jobs
+                /* ghprbSimpleStatus {
+                    showMatrixStatus(true)
+                    commitStatusContext('Linux')
+                    statusUrl('${BUILD_URL}display/redirect')
+                    triggeredStatus('Build triggered.')
+                    startedStatus('Build started.')
+                    addTestResults(true)
+                } */
+                ghprbBuildStatus {
+                    messages {
+                        /* need to manually add the "$" before the bracketed BUILD_URL
+                        in the final so that the seed build URL is not used */
+                        ghprbBuildResultMessage {
+                            result('SUCCESS')
+                            message("The build has **passed**. You can find the build [here]({BUILD_URL}).")
+                        }
+                        ghprbBuildResultMessage {
+                            result('ERROR')
+                            message("The build has **an error**. Please check [the logs]({BUILD_URL}).")
+                        }
+                        ghprbBuildResultMessage {
+                            result('FAILURE')
+                            message("The build has **failed**. Please check [the logs]({BUILD_URL}).")
+                        }
+                    }
+                }
+            }
+            includedRegions('')
+            excludedRegions('')
+        }
+    }
+}
