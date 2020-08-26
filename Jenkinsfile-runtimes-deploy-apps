@@ -23,7 +23,7 @@ pipeline {
         string(name: 'GIT_AUTHOR', defaultValue: 'kiegroup', description: 'Which Git author repository ?')
 
         // Build&test information
-        booleanParam(name: 'SKIP_TESTS', defaultValue: false, description: 'Skip tests')
+        booleanParam(name: 'SKIP_TESTS', defaultValue: true, description: 'Skip tests')
 
         // Deploy information
         string(name: 'MAVEN_DEPLOY_REPOSITORY', defaultValue: '', description: 'Specify a Maven repository to deploy the artifacts.')
@@ -73,7 +73,18 @@ pipeline {
         }
         stage('Clone repositories') { 
             steps {
+                checkoutRepo('kogito-runtimes')
                 checkoutRepo('kogito-apps')
+            }
+        }
+        stage('Build kogito-runtimes') {
+            steps {
+                mavenCleanInstall('kogito-runtimes', params.SKIP_TESTS)
+            }
+            post {
+                always {
+                    saveReports(params.SKIP_TESTS)
+                }
             }
         }
         stage('Build kogito-apps') {
@@ -82,7 +93,7 @@ pipeline {
             }
             post {
                 always {
-                    saveReports()
+                    saveReports(params.SKIP_TESTS)
                 }
             }
         }
@@ -93,14 +104,16 @@ pipeline {
         }
         stage('Push zip of artifacts to Maven repository') {
             steps {
+                // unpack zip to QA Nexus
                 withCredentials([usernameColonPassword(credentialsId: 'unpacks-zip-on-qa-nexus', variable: 'kieUnpack')]) {
-                    // unpack zip to QA Nexus
-                    sh """
-                    cd ${env.LOCAL_DEPLOY_DIR}
-                    zip -r kiegroup .
-                    curl --silent --upload-file kiegroup.zip -u ${kieUnpack} -v ${params.MAVEN_DEPLOY_REPOSITORY}/content-compressed
-                    cd ..
-                    """
+                    withCredentials([string(credentialsId: 'PR_CHECK_MAVEN_REPOSITORY', variable: 'MAVEN_REPO')]) {
+                        sh """
+                        cd ${env.LOCAL_DEPLOY_DIR}
+                        zip -r kiegroup .
+                        curl --silent --upload-file kiegroup.zip -u ${kieUnpack} -v ${MAVEN_REPO}/content-compressed
+                        cd ..
+                        """
+                    }
                 }
             }
         }
@@ -199,7 +212,7 @@ void mavenCleanInstall(String directory, boolean skipTests = false, List profile
 }
 
 void mavenLocalDeploy(String directory) {
-    extraArgs = params.MAVEN_DEPLOY_REPOSITORY != '' ? "-DaltDeploymentRepository=local::default::file://${env.LOCAL_DEPLOY_DIR}" : ''
+    extraArgs = "-DaltDeploymentRepository=local::default::file://${env.LOCAL_DEPLOY_DIR}"
     runMaven('clean deploy', directory, true, [], extraArgs)
 }
 
