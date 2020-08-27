@@ -9,8 +9,8 @@ changeId = env.ghprbPullId ?: CHANGE_ID
 // custom/kmok/KOGITO-1031-full
 // ../../KIE/kogito/kogito-images-deploy
 RUNTIMES_DEPLOY = "kogito-runtimes-deploy"
-IMAGES_DEPLOY = "../../KIE/kogito/kogito-images-deploy"
-OPERATOR_DEPLOY = "../../KIE/kogito/kogito-operator-deploy"
+IMAGES_DEPLOY = "../../../KIE/kogito/kogito-images-deploy"
+OPERATOR_DEPLOY = "../../../KIE/kogito/kogito-operator-deploy"
 
 // Map of execute jobs
 // See https://javadoc.jenkins.io/plugin/workflow-support/org/jenkinsci/plugins/workflow/support/steps/build/RunWrapper.html

@@ -110,7 +110,7 @@ pipeline {
                         sh """
                         cd ${env.LOCAL_DEPLOY_DIR}
                         zip -r kiegroup .
-                        curl --silent --upload-file kiegroup.zip -u ${kieUnpack} -v ${MAVEN_REPO}/content-compressed
+                        curl --silent --upload-file kiegroup.zip -u ${kieUnpack} -v ${MAVEN_REPO}content-compressed
                         cd ..
                         """
                     }
