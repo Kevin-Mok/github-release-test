@@ -7,8 +7,10 @@ changeTarget = env.ghprbTargetBranch ?: CHANGE_TARGET
 changeId = env.ghprbPullId ?: CHANGE_ID
 
 RUNTIMES_DEPLOY = "kogito-runtimes-deploy"
-IMAGES_DEPLOY = "kogito-images-deploy"
-OPERATOR_DEPLOY = "kogito-operator-deploy"
+// IMAGES_DEPLOY = "kogito-images-deploy"
+// OPERATOR_DEPLOY = "kogito-operator-deploy"
+IMAGES_DEPLOY = "../../../KIE/kogito/kogito-images-deploy"
+OPERATOR_DEPLOY = "../../../KIE/kogito/kogito-operator-deploy"
 
 // Map of execute jobs
 // See https://javadoc.jenkins.io/plugin/workflow-support/org/jenkinsci/plugins/workflow/support/steps/build/RunWrapper.html
