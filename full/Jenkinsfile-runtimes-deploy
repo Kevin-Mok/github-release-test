@@ -197,15 +197,13 @@ pipeline {
         stage('Push zip of artifacts to Maven repository') {
             steps {
                 withCredentials([usernameColonPassword(credentialsId: 'unpacks-zip-on-qa-nexus', variable: 'kieUnpack')]) {
-                    withCredentials([string(credentialsId: 'PR_CHECK_MAVEN_REPOSITORY', variable: 'MAVEN_REPO')]) {
-                        // unpack zip to QA Nexus
-                        sh """
-                        cd ${env.LOCAL_DEPLOY_DIR}
-                        zip -r kiegroup .
-                        curl --silent --upload-file kiegroup.zip -u ${kieUnpack} -v ${MAVEN_REPO}content-compressed
-                        cd ..
-                        """
-                    }
+                    // unpack zip to QA Nexus
+                    sh """
+                    cd ${env.LOCAL_DEPLOY_DIR}
+                    zip -r kiegroup .
+                    curl --silent --upload-file kiegroup.zip -u ${kieUnpack} -v ${getMavenRepoZipUrl()}
+                    cd ..
+                    """
                 }
             }
         }
@@ -371,8 +369,12 @@ void mavenCleanInstall(String directory, boolean skipTests = false, List profile
 }
 
 void mavenLocalDeploy(String directory) {
-    extraArgs = params.MAVEN_DEPLOY_REPOSITORY != '' ? "-DaltDeploymentRepository=local::default::file://${env.LOCAL_DEPLOY_DIR}" : ''
+    extraArgs = "-DaltDeploymentRepository=local::default::file://${env.LOCAL_DEPLOY_DIR}"
     runMaven('clean deploy', directory, true, [], extraArgs)
+}
+
+String getMavenRepoZipUrl() {
+    return params.MAVEN_DEPLOY_REPOSITORY.replaceAll("/content/", "/service/local/") + "/content-compressed"
 }
 
 void runMaven(String command, String directory, boolean skipTests = false, List profiles = [], String extraArgs = '') {

@@ -63,7 +63,7 @@ pipeline {
             }
         }
 
-        /* stage("Build & Deploy Images") {
+        stage("Build & Deploy Images") {
             steps {
                 script {
                     echo "Call ${IMAGES_DEPLOY} job"
@@ -98,7 +98,7 @@ pipeline {
                     buildJob(OPERATOR_DEPLOY, buildParams)
                 }
             }
-        } */
+        }
 
     }
     post {
