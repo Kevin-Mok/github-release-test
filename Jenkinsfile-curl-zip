@@ -1,0 +1,20 @@
+@Library('jenkins-pipeline-shared-libraries')_
+
+pipeline {
+    agent { label 'kie-rhel7-priority' }
+    /* agent any */
+    stages {
+        stage('Release') {
+            steps {
+                withCredentials([usernameColonPassword(credentialsId: 'unpacks-zip-on-qa-nexus', variable: 'kieUnpack')]) {
+                    // unpack zip to QA Nexus
+                    sh """
+                    touch a.txt
+                    zip a.zip a.txt
+                    curl --silent --upload-file a.zip -u ${kieUnpack} -v http://bxms-qe.rhev-ci-vms.eng.rdu2.redhat.com:8081/nexus/service/local/repositories/kogito-runtimes-pr-artifacts/content-compressed
+                    """
+                }
+            }
+        }
+    }
+}
