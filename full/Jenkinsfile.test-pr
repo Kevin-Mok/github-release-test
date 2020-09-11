@@ -169,6 +169,7 @@ void addAuthorBranchParamsIfExist(List params, String repo) {
 
 void addExamplesParamsForOperator(List params) {
     def repositoryScm = githubscm.getRepositoryScm('kogito-examples', changeAuthor, changeBranch)
-    addStringParam(params, 'EXAMPLES_REF', (repositoryScm != null) ? changeAuthor : 'kiegroup')
-    addStringParam(params, 'EXAMPLES_URI', (repositoryScm != null) ? changeBranch : 'master')
+    def gitAuthor = (repositoryScm != null) ? changeAuthor : 'kiegroup'
+    addStringParam(params, 'EXAMPLES_URI', "https://github.com/${gitAuthor}/kogito-examples")
+    addStringParam(params, 'EXAMPLES_REF', (repositoryScm != null) ? changeBranch : 'master')
 }
