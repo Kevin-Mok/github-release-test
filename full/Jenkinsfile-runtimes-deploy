@@ -197,13 +197,13 @@ pipeline {
         stage('Push zip of artifacts to Maven repository') {
             steps {
                 withCredentials([usernameColonPassword(credentialsId: 'unpacks-zip-on-qa-nexus', variable: 'kieUnpack')]) {
-                    // unpack zip to QA Nexus
-                    sh """
-                    cd ${env.LOCAL_DEPLOY_DIR}
-                    zip -r kiegroup .
-                    curl --silent --upload-file kiegroup.zip -u ${kieUnpack} -v ${getMavenRepoZipUrl()}
-                    cd ..
-                    """
+                    dir(env.LOCAL_DEPLOY_DIR) {
+                        // unpack zip to QA Nexus
+                        sh """
+                        zip -r kiegroup .
+                        curl --silent --upload-file kiegroup.zip -u ${kieUnpack} -v ${getMavenRepoZipUrl()}
+                        """
+                    }
                 }
             }
         }
@@ -334,16 +334,12 @@ String getBuildBranch(){
 
 String getDefaultBranch(String repo) {
     // if not triggered by PR
-    if (params.PR_TARGET_BRANCH == '') {
+    if (!params.PR_TARGET_BRANCH) {
         return 'master'
     }
     // if PR target branch exists
     def repositoryScm = githubscm.getRepositoryScm(repo, 'kiegroup', params.PR_TARGET_BRANCH)
-    if (repositoryScm != null) {
-        return params.PR_TARGET_BRANCH
-    }
-    // if target branch doesn't exist in repos other than PR repo
-    return 'master'
+    return repositoryScm ? params.PR_TARGET_BRANCH : 'master'
 }
 
 String getProjectVersion(){

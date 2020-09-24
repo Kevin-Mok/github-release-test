@@ -70,7 +70,7 @@ pipeline {
 
                     def buildParams = getDefaultBuildParams()
                     addAuthorBranchParamsIfExist(buildParams, 'kogito-images')
-                    addImageBuildParams(buildParams, "", "${TEMP_TAG}", true, false)
+                    addImageBuildParams(env.TEMP_TAG, buildParams, '', true, false)
                     addStringParam(buildParams, "MAVEN_ARTIFACT_REPOSITORY", env.MAVEN_REPOSITORY) // Added to be sure to get latest snapshots
 
                     buildJob(IMAGES_DEPLOY, buildParams)
@@ -84,7 +84,7 @@ pipeline {
                     echo "Call ${OPERATOR_DEPLOY} job"
                     def buildParams = getDefaultBuildParams()
                     addAuthorBranchParamsIfExist(buildParams, 'kogito-cloud-operator')
-                    addImageBuildParams(buildParams, "", "${TEMP_TAG}", true, false)
+                    addImageBuildParams(env.TEMP_TAG, buildParams, '', true, false)
 
                     // For BDD tests
                     addBooleanParam(buildParams, "KOGITO_IMAGES_IN_OPENSHIFT_REGISTRY", false)
@@ -133,7 +133,7 @@ List getDefaultBuildParams(){
     return params
 }
 
-void addImageBuildParams(List buildParams = [], String paramsPrefix = "", String tag, boolean isRegistryIncluded = false, boolean isFinalImage = false){
+void addImageBuildParams(String tag, List buildParams = [], String paramsPrefix = "", boolean isRegistryIncluded = false, boolean isFinalImage = false){
     if(isRegistryIncluded) {
         addStringParam(buildParams, constructKey(paramsPrefix, "IMAGE_REGISTRY_CREDENTIALS"), "${IMAGE_REGISTRY_CREDENTIALS}")
         addStringParam(buildParams, constructKey(paramsPrefix, "IMAGE_REGISTRY"), "${IMAGE_REGISTRY}")
@@ -152,7 +152,7 @@ void addBooleanParam(List params, String key, boolean value){
 }
 
 String constructKey(String prefix, String paramId){
-    return prefix == null || prefix == '' ? paramId : "${prefix}_${paramId}"
+    return prefix ? "${prefix}_${paramId}" : paramId
 }
 
 String getPRRepoName() {
