@@ -1,0 +1,17 @@
+pipeline {
+    agent any
+    parameters {
+        string(name: 'param', defaultValue: '')
+    }
+
+    stages {
+        stage('Release') {
+            steps {
+                script {
+                    /* echo params.param ? "non-empty" : "empty" */
+                    echo params.param ?: "empty"
+                }
+            }
+        }
+    }
+}
