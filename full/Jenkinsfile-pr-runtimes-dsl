@@ -9,7 +9,7 @@ pipelineJob('custom/kmok/KOGITO-1031-full/kogito-runtimes-bdd') {
                     branch('*/1031')
                 }
             }
-            scriptPath('full/Jenkinsfile-pr-runtimes')
+            scriptPath('full/Jenkinsfile.pr-bdd-tests')
             lightweight(false)
         }
     }
