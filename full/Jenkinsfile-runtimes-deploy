@@ -81,6 +81,7 @@ pipeline {
         stage('Build kogito-runtimes') {
             steps {
                 /* mavenCleanInstall('kogito-runtimes', params.SKIP_TESTS) */
+                echo "build runtimes"
             }
             post {
                 always {
@@ -91,6 +92,7 @@ pipeline {
         stage('Build kogito-apps') {
             steps {
                 /* mavenCleanInstall('kogito-apps', params.SKIP_TESTS) */
+                echo "build apps"
             }
             post {
                 always {
@@ -124,7 +126,7 @@ void saveReports(boolean allowEmpty=false){
 void checkoutRepo(String repo, String dirName=repo) {
     dir(dirName) {
         deleteDir()
-        githubscm.checkoutIfExists(repo, getGitAuthor(), getBuildBranch(), 'kiegroup', getDefaultBranch(repo), true)
+        githubscm.checkoutIfExists(repo, getGitAuthor(), getBuildBranch(), 'Kevin-Mok', getDefaultBranch(repo), true)
     }
 }
 
@@ -133,7 +135,7 @@ String getDefaultBranch(String repo) {
     if (!params.PR_TARGET_BRANCH) {
         return 'master'
     }
-    def repositoryScm = githubscm.getRepositoryScm(repo, 'kiegroup', params.PR_TARGET_BRANCH)
+    def repositoryScm = githubscm.getRepositoryScm(repo, 'Kevin-Mok', params.PR_TARGET_BRANCH)
     return repositoryScm ? params.PR_TARGET_BRANCH : 'master'
 }
 
