@@ -31,7 +31,7 @@ pipeline {
     }
 
     environment {
-        KOGITO_CI_EMAIL_TO = credentials('KOGITO_CI_EMAIL_TO')
+        PR_CHECK_MAVEN_REPO = credentials('PR_CHECK_MAVEN_REPOSITORY')
 
         // We use quay as temporary registry for testing between the jobs instead of Openshift, due to https://issues.redhat.com/browse/KOGITO-2219
         IMAGE_REGISTRY_CREDENTIALS = 'nightly_kogito'
@@ -248,7 +248,7 @@ String constructKey(String prefix, String paramId){
 }
 
 String getArtifactsRepositoryParam(){
-    return credentials('PR_CHECK_MAVEN_REPOSITORY')
+    return env.PR_CHECK_MAVEN_REPO
 }
 
 String getPRRepoName() {
