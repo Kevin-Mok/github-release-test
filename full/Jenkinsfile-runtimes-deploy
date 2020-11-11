@@ -80,8 +80,7 @@ pipeline {
         }
         stage('Build kogito-runtimes') {
             steps {
-                /* mavenCleanInstall('kogito-runtimes', params.SKIP_TESTS) */
-                echo "build runtimes"
+                mavenCleanInstall('kogito-runtimes', params.SKIP_TESTS)
             }
             post {
                 always {
@@ -91,8 +90,7 @@ pipeline {
         }
         stage('Build kogito-apps') {
             steps {
-                /* mavenCleanInstall('kogito-apps', params.SKIP_TESTS) */
-                echo "build apps"
+                mavenCleanInstall('kogito-apps', params.SKIP_TESTS)
             }
             post {
                 always {
@@ -216,7 +214,7 @@ void mavenCleanInstall(String directory, boolean skipTests = false, List profile
 void mavenDeploy(String directory) {
     extraArgs = params.MAVEN_DEPLOY_REPOSITORY != '' ? "-DaltDeploymentRepository=runtimes-artifacts::default::${params.MAVEN_DEPLOY_REPOSITORY} -Denforcer.skip=true" : ''
     echo "deploy args: ${extraArgs}"
-    /* runMaven('clean deploy', directory, true, [], extraArgs) */
+    runMaven('clean deploy', directory, true, [], extraArgs)
 }
 
 void runMaven(String command, String directory, boolean skipTests = false, List profiles = [], String extraArgs = '') {
