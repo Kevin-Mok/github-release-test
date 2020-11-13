@@ -62,7 +62,8 @@ pipeline {
                     echo "Call ${RUNTIMES_DEPLOY} job"
                     def buildParams = getDefaultBuildParams()
                     addAuthorBranchParamsIfExist(buildParams, getPRRepoName())
-                    addStringParam(buildParams, 'MAVEN_DEPLOY_REPOSITORY', getArtifactsRepositoryParam())
+                    addDeployParams(buildParams)
+                    addStringParam(buildParams, 'MAVEN_DEPLOY_CREDS_ID', 'unpacks-zip-on-qa-nexus')
                     
                     // images and operator deploy testing will use older working artifacts if that one fails
                     buildJob(RUNTIMES_DEPLOY, buildParams, false)
@@ -206,6 +207,11 @@ void addAuthorBranchParamsIfExist(List params, String repo) {
         addStringParam(params, 'GIT_AUTHOR', changeAuthor)
         addStringParam(params, 'BUILD_BRANCH_NAME', changeBranch)
     }
+}
+
+void addDeployParams(List buildParams){
+    addStringParam(buildParams, 'MAVEN_DEPENDENCIES_REPOSITORY', getArtifactsRepositoryParam())
+    addStringParam(buildParams, 'MAVEN_DEPLOY_REPOSITORY', getArtifactsRepositoryParam())
 }
 
 void addExamplesParams(List buildParams){
