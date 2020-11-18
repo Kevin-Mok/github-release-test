@@ -119,7 +119,7 @@ pipeline {
                     echo "Call ${IMAGES_DEPLOY} job"
 
                     def buildParams = getDefaultBuildParams()
-                    addImageBuildParams(buildParams, '', env.TEMP_TAG, true, false)
+                    addImageBuildParams(buildParams)
                     addExamplesParams(buildParams)
                     addStringParam(buildParams, 'MAVEN_ARTIFACT_REPOSITORY', getArtifactsRepositoryParam()) // Get artifacts from specific repository if not empty
 
@@ -138,7 +138,7 @@ pipeline {
                 script {
                     echo "Call ${OPERATOR_DEPLOY} job"
                     def buildParams = getDefaultBuildParams()
-                    addImageBuildParams(buildParams, '', env.TEMP_TAG, true, false)
+                    addImageBuildParams(buildParams)
 
                     // For BDD tests
                     addBooleanParam(buildParams, 'KOGITO_IMAGES_IN_OPENSHIFT_REGISTRY', false)
@@ -231,14 +231,12 @@ void addExamplesParams(List buildParams){
     addStringParam(buildParams, 'EXAMPLES_REF', branch)
 }
 
-void addImageBuildParams(List buildParams = [], String paramsPrefix = '', String tag, boolean isRegistryIncluded = false, boolean isFinalImage = false){
-    if(isRegistryIncluded) {
-        addStringParam(buildParams, constructKey(paramsPrefix, 'IMAGE_REGISTRY_CREDENTIALS'), env.IMAGE_REGISTRY_CREDENTIALS)
-        addStringParam(buildParams, constructKey(paramsPrefix, 'IMAGE_REGISTRY'), env.IMAGE_REGISTRY)
-        addStringParam(buildParams, constructKey(paramsPrefix, 'IMAGE_NAMESPACE'), env.IMAGE_NAMESPACE)
-    }
-    addStringParam(buildParams, constructKey(paramsPrefix, 'IMAGE_NAME_SUFFIX'), env.IMAGE_NAME_SUFFIX)
-    addStringParam(buildParams, constructKey(paramsPrefix, 'IMAGE_TAG'), tag)
+void addImageBuildParams(List buildParams){
+    addStringParam(buildParams, 'IMAGE_REGISTRY_CREDENTIALS', env.IMAGE_REGISTRY_CREDENTIALS)
+    addStringParam(buildParams, 'IMAGE_REGISTRY', env.IMAGE_REGISTRY)
+    addStringParam(buildParams, 'IMAGE_NAMESPACE', env.IMAGE_NAMESPACE)
+    addStringParam(buildParams, 'IMAGE_NAME_SUFFIX', env.IMAGE_NAME_SUFFIX)
+    addStringParam(buildParams, 'IMAGE_TAG', env.TEMP_TAG)
 }
 
 void addStringParam(List params, String key, String value){
@@ -247,10 +245,6 @@ void addStringParam(List params, String key, String value){
 
 void addBooleanParam(List params, String key, boolean value){
     params.add(booleanParam(name: key, value: value))
-}
-
-String constructKey(String prefix, String paramId){
-    return prefix == null || prefix == '' ? paramId : "${prefix}_${paramId}"
 }
 
 String getArtifactsRepositoryParam(){

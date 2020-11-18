@@ -238,6 +238,10 @@ void mavenLocalDeploy(String directory) {
     runMaven('clean deploy', directory, true, [], extraArgs)
 }
 
+String getMavenRepoZipUrl() {
+     return "${params.MAVEN_DEPLOY_REPOSITORY.replaceAll('/content/', '/service/local/').replaceFirst('/*$', '')}/content-compressed"
+}
+
 void runMaven(String command, String directory, boolean skipTests = false, List profiles = [], String extraArgs = '') {
     mvnCmd = command
     if(profiles.size() > 0){
