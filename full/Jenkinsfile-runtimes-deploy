@@ -12,7 +12,7 @@ pipeline {
     }
     
     options {
-        buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10')
+        buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '5')
     }
 
     parameters {
@@ -53,6 +53,7 @@ pipeline {
             steps {
                 script {
                     cleanWs()
+                    sh 'printenv'
                     
                     if (params.DISPLAY_NAME != '') {
                         currentBuild.displayName = params.DISPLAY_NAME

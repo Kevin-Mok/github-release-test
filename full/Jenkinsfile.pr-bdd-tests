@@ -7,10 +7,10 @@ changeTarget = env.ghprbTargetBranch ?: CHANGE_TARGET
 changeId = env.ghprbPullId ?: CHANGE_ID
 
 RUNTIMES_DEPLOY = 'kogito-runtimes-deploy'
-EXAMPLES_DEPLOY = 'kogito-examples-deploy'
-IMAGES_DEPLOY = 'kogito-images-deploy'
-OPERATOR_DEPLOY = 'kogito-operator-deploy'
-OPTAPLANNER_DEPLOY = 'optaplanner-deploy'
+EXAMPLES_DEPLOY = '../../../KIE/kogito/kogito-examples-deploy'
+IMAGES_DEPLOY = '../../../KIE/kogito/kogito-images-deploy'
+OPERATOR_DEPLOY = '../../../KIE/kogito/kogito-operator-deploy'
+OPTAPLANNER_DEPLOY = '../../../KIE/kogito/optaplanner-deploy'
 
 // Map of executed jobs
 // See https://javadoc.jenkins.io/plugin/workflow-support/org/jenkinsci/plugins/workflow/support/steps/build/RunWrapper.html
@@ -66,7 +66,7 @@ pipeline {
                     addStringParam(buildParams, 'MAVEN_DEPLOY_CREDS_ID', 'unpacks-zip-on-qa-nexus')
                     
                     // images and operator deploy testing will use older working artifacts if that one fails
-                    buildJob(RUNTIMES_DEPLOY, buildParams, false)
+                    buildJob(RUNTIMES_DEPLOY, buildParams)
                 }
             }
             post {
@@ -84,7 +84,7 @@ pipeline {
                     addStringParam(buildParams, 'MAVEN_DEPENDENCIES_REPOSITORY', getArtifactsRepositoryParam())
                     addStringParam(buildParams, 'MAVEN_DEPLOY_REPOSITORY', getArtifactsRepositoryParam())
 
-                    buildJob(OPTAPLANNER_DEPLOY, buildParams, false)
+                    buildJob(OPTAPLANNER_DEPLOY, buildParams)
                 }
             }
             post {
@@ -103,7 +103,7 @@ pipeline {
                     addStringParam(buildParams, 'MAVEN_DEPLOY_REPOSITORY', getArtifactsRepositoryParam())
                     
                     // images and operator deploy testing will use older working artifacts if that one fails
-                    buildJob(EXAMPLES_DEPLOY, buildParams, false)
+                    buildJob(EXAMPLES_DEPLOY, buildParams)
                 }
             }
             post {
@@ -123,7 +123,7 @@ pipeline {
                     addExamplesParams(buildParams)
                     addStringParam(buildParams, 'MAVEN_ARTIFACT_REPOSITORY', getArtifactsRepositoryParam()) // Get artifacts from specific repository if not empty
 
-                    buildJob(IMAGES_DEPLOY, buildParams, false)
+                    buildJob(IMAGES_DEPLOY, buildParams)
                 }
             }
             post {
@@ -149,7 +149,7 @@ pipeline {
                     addExamplesParams(buildParams)
                     addStringParam(buildParams, 'MAVEN_ARTIFACT_REPOSITORY', getArtifactsRepositoryParam()) // Get artifacts from specific repository if not empty
 
-                    buildJob(OPERATOR_DEPLOY, buildParams, false)
+                    buildJob(OPERATOR_DEPLOY, buildParams)
                 }
             }
             post {
