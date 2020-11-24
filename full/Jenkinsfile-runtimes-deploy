@@ -36,9 +36,6 @@ pipeline {
         // Bot author information. Set as params for easy testing.
         string(name: 'GIT_AUTHOR_BOT', defaultValue: 'bsig-gh-bot', description: 'From which author should the PR be created ?')
         string(name: 'BOT_CREDENTIALS_ID', defaultValue: 'bsig-gh-bot', description: 'Credentials for PR creation')
-
-        // PR parameter to be filled out by GitHub Pull Request Builder for PR checks
-        string(name: 'PR_TARGET_BRANCH', defaultValue: '', description: 'What is the target branch of the PR? Will be automatically filled out by GitHub Pull Request Builder.')
     }
 
     environment {
@@ -62,6 +59,8 @@ pipeline {
                     if (isRelease()) {
                         assert getProjectVersion() != ''
                     }
+
+                    checkoutRepo('kogito-runtimes')
                 }
             }
             post {
@@ -75,25 +74,9 @@ pipeline {
                 }
             }
         }
-        stage('Clone repositories') { 
-            steps {
-                checkoutRepo('kogito-runtimes')
-                checkoutRepo('kogito-apps')
-            }
-        }
         stage('Build kogito-runtimes') {
             steps {
                 mavenCleanInstall('kogito-runtimes', params.SKIP_TESTS)
-            }
-            post {
-                always {
-                    saveReports(params.SKIP_TESTS)
-                }
-            }
-        }
-        stage('Build kogito-apps') {
-            steps {
-                mavenCleanInstall('kogito-apps', params.SKIP_TESTS)
             }
             post {
                 always {
@@ -106,7 +89,6 @@ pipeline {
                 script {
                     if (params.MAVEN_DEPLOY_REPOSITORY && params.MAVEN_DEPLOY_CREDS_ID) {
                         mavenLocalDeploy('kogito-runtimes')
-                        mavenLocalDeploy('kogito-apps')
                         withCredentials([usernameColonPassword(credentialsId: params.MAVEN_DEPLOY_CREDS_ID, variable: 'kieUnpack')]) {
                             dir(env.LOCAL_DEPLOY_DIR) {
                                 // unpack zip to QA Nexus
@@ -118,7 +100,6 @@ pipeline {
                         }
                     } else {
                         mavenDeploy('kogito-runtimes')
-                        mavenDeploy('kogito-apps')
                     }
                 }
             }
@@ -143,17 +124,8 @@ void saveReports(boolean allowEmpty=false){
 void checkoutRepo(String repo, String dirName=repo) {
     dir(dirName) {
         deleteDir()
-        githubscm.checkoutIfExists(repo, getGitAuthor(), getBuildBranch(), 'Kevin-Mok', getDefaultBranch(repo), true)
+        checkout(githubscm.resolveRepository(repo, getGitAuthor(), getBuildBranch(), false))
     }
-}
-
-String getDefaultBranch(String repo) {
-    // if not triggered by PR
-    if (!params.PR_TARGET_BRANCH) {
-        return 'master'
-    }
-    def repositoryScm = githubscm.getRepositoryScm(repo, 'Kevin-Mok', params.PR_TARGET_BRANCH)
-    return repositoryScm ? params.PR_TARGET_BRANCH : 'master'
 }
 
 void prepareForPR(String repo) {

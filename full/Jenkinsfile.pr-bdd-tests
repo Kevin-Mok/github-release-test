@@ -7,6 +7,7 @@ changeTarget = env.ghprbTargetBranch ?: CHANGE_TARGET
 changeId = env.ghprbPullId ?: CHANGE_ID
 
 RUNTIMES_DEPLOY = 'kogito-runtimes-deploy'
+APPS_DEPLOY = 'kogito-apps-deploy'
 EXAMPLES_DEPLOY = '../../../KIE/kogito/kogito-examples-deploy'
 IMAGES_DEPLOY = '../../../KIE/kogito/kogito-images-deploy'
 OPERATOR_DEPLOY = '../../../KIE/kogito/kogito-operator-deploy'
@@ -62,7 +63,7 @@ pipeline {
                     echo "Call ${RUNTIMES_DEPLOY} job"
                     def buildParams = getDefaultBuildParams()
                     addAuthorBranchParamsIfExist(buildParams, getPRRepoName())
-                    addDeployParams(buildParams)
+                    addArtifactsRepositoriesParam(buildParams)
                     addStringParam(buildParams, 'MAVEN_DEPLOY_CREDS_ID', 'unpacks-zip-on-qa-nexus')
                     
                     // images and operator deploy testing will use older working artifacts if that one fails
@@ -94,6 +95,27 @@ pipeline {
             }
         }
 
+        stage('Build & Deploy Kogito Apps') {
+            when {
+                expression { return isArtifactsDeploy() }
+            }
+            steps {
+                script {
+                    echo "Call ${APPS_DEPLOY} job"
+                    def buildParams = getDefaultBuildParams()
+                    addSkipTestsParam(buildParams)
+                    addArtifactsRepositoriesParam(buildParams)
+                    
+                    // images and operator deploy testing will use older working artifacts if that one fails
+                    buildJob(APPS_DEPLOY, buildParams, false)
+                }
+            }
+            post {
+                failure {
+                    addFailedStage()
+                }
+            }
+        }
         stage('Build & Deploy Kogito Examples') {
             steps {
                 script {
@@ -121,7 +143,7 @@ pipeline {
                     def buildParams = getDefaultBuildParams()
                     addImageBuildParams(buildParams)
                     addExamplesParams(buildParams)
-                    addStringParam(buildParams, 'MAVEN_ARTIFACT_REPOSITORY', getArtifactsRepositoryParam()) // Get artifacts from specific repository if not empty
+                    addCloudRepositoriesParam(buildParams)
 
                     buildJob(IMAGES_DEPLOY, buildParams)
                 }
@@ -147,7 +169,7 @@ pipeline {
                     addStringParam(buildParams, 'KOGITO_IMAGES_NAME_SUFFIX', env.IMAGE_NAME_SUFFIX)
                     addStringParam(buildParams, 'KOGITO_IMAGES_TAG', env.TEMP_TAG)
                     addExamplesParams(buildParams)
-                    addStringParam(buildParams, 'MAVEN_ARTIFACT_REPOSITORY', getArtifactsRepositoryParam()) // Get artifacts from specific repository if not empty
+                    addCloudRepositoriesParam(buildParams)
 
                     buildJob(OPERATOR_DEPLOY, buildParams)
                 }
@@ -209,9 +231,13 @@ void addAuthorBranchParamsIfExist(List params, String repo) {
     }
 }
 
-void addDeployParams(List buildParams){
+void addArtifactsRepositoriesParam(List buildParams){
     addStringParam(buildParams, 'MAVEN_DEPENDENCIES_REPOSITORY', getArtifactsRepositoryParam())
     addStringParam(buildParams, 'MAVEN_DEPLOY_REPOSITORY', getArtifactsRepositoryParam())
+}
+
+void addCloudRepositoriesParam(List buildParams){
+    addStringParam(buildParams, 'MAVEN_ARTIFACT_REPOSITORY', getArtifactsRepositoryParam())
 }
 
 void addExamplesParams(List buildParams){
