@@ -11,7 +11,8 @@ APPS_DEPLOY = 'kogito-apps-deploy'
 EXAMPLES_DEPLOY = '../../../KIE/kogito/kogito-examples-deploy'
 IMAGES_DEPLOY = '../../../KIE/kogito/kogito-images-deploy'
 OPERATOR_DEPLOY = '../../../KIE/kogito/kogito-operator-deploy'
-OPTAPLANNER_DEPLOY = '../../../KIE/kogito/optaplanner-deploy'
+/* OPTAPLANNER_DEPLOY = '../../../KIE/kogito/optaplanner-deploy' */
+OPTAPLANNER_DEPLOY = 'optaplanner-deploy'
 
 // Map of executed jobs
 // See https://javadoc.jenkins.io/plugin/workflow-support/org/jenkinsci/plugins/workflow/support/steps/build/RunWrapper.html
@@ -33,6 +34,7 @@ pipeline {
 
     environment {
         PR_CHECK_MAVEN_REPO = credentials('PR_CHECK_MAVEN_REPOSITORY')
+        MAVEN_REPO_CREDS_ID = 'unpacks-zip-on-qa-nexus'
 
         // We use quay as temporary registry for testing between the jobs instead of Openshift, due to https://issues.redhat.com/browse/KOGITO-2219
         IMAGE_REGISTRY_CREDENTIALS = 'nightly_kogito'
@@ -82,8 +84,7 @@ pipeline {
                 script {
                     echo "Call ${OPTAPLANNER_DEPLOY} job"
                     def buildParams = getDefaultBuildParams()
-                    addStringParam(buildParams, 'MAVEN_DEPENDENCIES_REPOSITORY', getArtifactsRepositoryParam())
-                    addStringParam(buildParams, 'MAVEN_DEPLOY_REPOSITORY', getArtifactsRepositoryParam())
+                    addArtifactsRepositoriesParam(buildParams)
 
                     buildJob(OPTAPLANNER_DEPLOY, buildParams)
                 }
@@ -96,14 +97,11 @@ pipeline {
         }
 
         stage('Build & Deploy Kogito Apps') {
-            when {
-                expression { return isArtifactsDeploy() }
-            }
             steps {
                 script {
                     echo "Call ${APPS_DEPLOY} job"
                     def buildParams = getDefaultBuildParams()
-                    addSkipTestsParam(buildParams)
+                    addAuthorBranchParamsIfExist(buildParams, getPRRepoName())
                     addArtifactsRepositoriesParam(buildParams)
                     
                     // images and operator deploy testing will use older working artifacts if that one fails
@@ -143,7 +141,7 @@ pipeline {
                     def buildParams = getDefaultBuildParams()
                     addImageBuildParams(buildParams)
                     addExamplesParams(buildParams)
-                    addCloudRepositoriesParam(buildParams)
+                    addArtifactsRepositoriesParam(buildParams)
 
                     buildJob(IMAGES_DEPLOY, buildParams)
                 }
@@ -169,7 +167,7 @@ pipeline {
                     addStringParam(buildParams, 'KOGITO_IMAGES_NAME_SUFFIX', env.IMAGE_NAME_SUFFIX)
                     addStringParam(buildParams, 'KOGITO_IMAGES_TAG', env.TEMP_TAG)
                     addExamplesParams(buildParams)
-                    addCloudRepositoriesParam(buildParams)
+                    addArtifactsRepositoriesParam(buildParams)
 
                     buildJob(OPERATOR_DEPLOY, buildParams)
                 }
@@ -234,10 +232,8 @@ void addAuthorBranchParamsIfExist(List params, String repo) {
 void addArtifactsRepositoriesParam(List buildParams){
     addStringParam(buildParams, 'MAVEN_DEPENDENCIES_REPOSITORY', getArtifactsRepositoryParam())
     addStringParam(buildParams, 'MAVEN_DEPLOY_REPOSITORY', getArtifactsRepositoryParam())
-}
-
-void addCloudRepositoriesParam(List buildParams){
     addStringParam(buildParams, 'MAVEN_ARTIFACT_REPOSITORY', getArtifactsRepositoryParam())
+    addStringParam(buildParams, 'MAVEN_DEPLOY_CREDS_ID', env.MAVEN_REPO_CREDS_ID)
 }
 
 void addExamplesParams(List buildParams){

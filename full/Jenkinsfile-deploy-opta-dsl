@@ -1,0 +1,16 @@
+pipelineJob('custom/kmok/KOGITO-1031-full/optaplanner-deploy') {
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    remote {
+                        github('Kevin-Mok/optaplanner')
+                    }
+                    branch('*/KOGITO-1031')
+                }
+            }
+            scriptPath('Jenkinsfile.deploy')
+            lightweight(false)
+        }
+    }
+}
