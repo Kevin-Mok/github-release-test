@@ -1,0 +1,21 @@
+@Library('jenkins-pipeline-shared-libraries-new-checkout')_
+
+pipeline {
+    agent { label 'kie-rhel7-priority' }
+    /* agent any */
+    stages {
+        stage('Release') {
+            steps {
+                script {
+                    println doesBranchExist('optaplanner', 'Kevin-Mok-Bot', 'KOGITO-1031-pr-test')
+                }
+            }
+        }
+    }
+}
+
+boolean doesBranchExist(String repo, String author, String branch) {
+    def ghRepo = githubscm.getRepositoryScm(repo, author, branch)
+    println ghRepo
+    return ghRepo != null
+}

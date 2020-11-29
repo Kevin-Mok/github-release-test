@@ -1,0 +1,16 @@
+pipelineJob('custom/kmok/KOGITO-1031-full/kogito-examples-deploy') {
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    remote {
+                        github('Kevin-Mok/kogito-examples')
+                    }
+                    branch('*/KOGITO-1031')
+                }
+            }
+            scriptPath('Jenkinsfile.deploy')
+            lightweight(false)
+        }
+    }
+}
