@@ -1,0 +1,30 @@
+@Library('jenkins-pipeline-shared-libraries')_
+
+pipeline {
+    /* agent { label 'kie-rhel7-priority' } */
+    agent any
+    stages {
+        stage('Initialize') {
+            steps {
+                script {
+                    cleanWs()
+                    checkout(githubscm.resolveRepository('kogito-cloud-operator', 'Kevin-Mok', 'KOGITO-3777', false))
+                }
+            }
+        }
+        stage('make vet') {
+            steps {
+                script {
+                    sh 'make vet'
+                }
+            }
+        }
+    }
+    post {
+        always {
+            script {
+                archiveArtifacts(artifacts: 'kogito-operator.yaml,api/v1beta1/zz_generated.openapi.go')
+            }
+        }
+    }
+}

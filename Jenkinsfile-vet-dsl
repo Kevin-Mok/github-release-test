@@ -1,0 +1,16 @@
+pipelineJob('custom/kmok/operator-make-vet') {
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    remote {
+                        github('Kevin-Mok/jenkins-test')
+                    }
+                    branch('3777')
+                }
+            }
+            scriptPath('Jenkinsfile-vet')
+            lightweight(false)
+        }
+    }
+}
