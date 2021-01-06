@@ -1,0 +1,17 @@
+pipelineJob('KIE/kogito/kogito-images-deploy-1031') {
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    remote {
+                        github('Kevin-Mok/kogito-images')
+                    }
+                    branch('*/KOGITO-1031')
+                }
+            }
+            scriptPath('Jenkinsfile.deploy')
+            lightweight(false)
+        }
+    }
+}
+// need to be in kogito dir to use OPENSHIFT_API/OPENSHIFT_REGISTRY credentials

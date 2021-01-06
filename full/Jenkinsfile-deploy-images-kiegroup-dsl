@@ -1,0 +1,16 @@
+pipelineJob('custom/kmok/KOGITO-1031-full/kogito-images-deploy') {
+    definition {
+        cpsScm {
+            scm {
+                git {
+                    remote {
+                        github('kiegroup/kogito-images')
+                    }
+                    branch('*/master')
+                }
+            }
+            scriptPath('Jenkinsfile.deploy')
+            lightweight(false)
+        }
+    }
+}
